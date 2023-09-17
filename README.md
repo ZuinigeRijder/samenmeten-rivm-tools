@@ -17,7 +17,7 @@ Er zijn 3 python scripts:
 
 Voorbeeld van de [resultaten van fijnstof over 2022 van gemeente Heusden kun je hier vinden op Google My Maps](https://www.google.com/maps/d/edit?mid=1nyoEbCk_SXPRRWx5NF0R1Hr0dcx_big&usp=sharing).
 
-![alt text](https://raw.githubusercontent.com/ZuinigeRijder/hyundai_kia_connect_monitor/main/HeusdenFijnstof2022.png)
+![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/HeusdenFijnstof2022.png)
 
 Python als programmeertaal heeft het voordeel dat het draait op Windows, Linux en Mac. De python scripts maken gebruik van [https://api-samenmeten.rivm.nl/v1.0](https://samenmeten.nl/dataportaal/api-application-programming-interface) voor het ophalen van de gegevens.
 
@@ -315,4 +315,4 @@ python samenvatting.py 2022 _Heusden.txt
 
 Voorbeeld van de [resultaten van fijnstof over 2022 van gemeente Heusden kun je hier vinden op Google My Maps](https://www.google.com/maps/d/edit?mid=1nyoEbCk_SXPRRWx5NF0R1Hr0dcx_big&usp=sharing).
 
-![alt text](https://raw.githubusercontent.com/ZuinigeRijder/hyundai_kia_connect_monitor/main/HeusdenFijnstof2022.png)
+![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/HeusdenFijnstof2022.png)
