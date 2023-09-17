@@ -8,7 +8,7 @@
 
 ---
 # Inleiding
-In [gemeente Heusden](https://samenmeten.rivm.nl/dataportaal/gemeente_tijdreeks.php?gem_id=797) is er ook een samenmeten project en ik wilde weten in hoeverre de fijnstof uitstoot van PM10 en PM2.5 voldoet aan de WHO (World Health Organization) of EU richtlijnen en/of hoever we daarvan af zitten. Ik kon bij de RIVM wel historische data vinden, maar geen actuele informatie. Daarnaast wilde ik gebruik maken van gecalibreerde uurwaardes om zo te berekenen of een meetstation of een groep van meetstations op (lopende) jaarbasis wel of niet aan de richtlijnen voldoen. Daarom heb ik deze python scripts gemaakt en deze beschikbaar gesteld, zodat die door andere ook gebruikt kunnen worden. En eventuele verbeteringen aangebracht kunnen worden.
+In [gemeente Heusden](https://samenmeten.rivm.nl/dataportaal/gemeente_tijdreeks.php?gem_id=797) is er ook een samenmeten project en ik wilde weten in hoeverre de fijnstof uitstoot van PM10 en PM2.5 voldoet aan de WHO (World Health Organization) of EU richtlijnen en/of hoever we daarvan af zitten. Ik kon bij de RIVM wel historische data vinden, maar geen actuele informatie. Daarnaast wilde ik gebruik maken van gekalibreerde uurwaardes om zo te berekenen of een meetstation of een groep van meetstations op (lopende) jaarbasis wel of niet aan de richtlijnen voldoen. Daarom heb ik deze python scripts gemaakt en deze beschikbaar gesteld, zodat die door andere ook gebruikt kunnen worden. En eventuele verbeteringen aangebracht kunnen worden.
 
 Er zijn 3 python scripts:
 - gemeente_station_namen.py: hiermee kun je meetstation namen van een gemeente achterhalen
@@ -316,3 +316,6 @@ python samenvatting.py 2022 _Heusden.txt
 Voorbeeld van de [resultaten van fijnstof over 2022 van gemeente Heusden kun je hier vinden op Google My Maps](https://www.google.com/maps/d/edit?mid=1nyoEbCk_SXPRRWx5NF0R1Hr0dcx_big&usp=sharing).
 
 ![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/HeusdenFijnstof2022.png)
+
+Wanneer een meetstation boven de WHO waardes zit, dan wordt dit weergegeven als ![alt text](https://maps.google.com/mapfiles/kml/shapes/firedept.png) anders als ![alt text](https://maps.google.com/mapfiles/kml/shapes/parks.png) (of als er geen meetdata voor laatste jaar is).
+De gemiddeldes van alle meetstations uit de lijst wordt ergens in het midden van de coördinaten weergegeven, boven de WHO waardes als ![alt text](https://maps.google.com/mapfiles/kml/shapes/schools.png) anders als ![alt text](https://maps.google.com/mapfiles/kml/shapes/ranger_station.png)
