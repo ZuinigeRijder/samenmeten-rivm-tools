@@ -70,6 +70,13 @@ def get_observations_values(url: str, till: str) -> dict:
     return result_dict
 
 
+def get_keylist(dictionary: dict) -> list:
+    """get_keylist"""
+    if dictionary is not None:
+        return list(dictionary.keys())
+    return []
+
+
 def get_observations_data(streams_data: dict, till: str, file: TextIOWrapper) -> None:
     """get_observations_data"""
     match = ["pm10", "pm10_kal", "pm25", "pm25_kal", "rh", "temp"]
@@ -93,21 +100,32 @@ def get_observations_data(streams_data: dict, till: str, file: TextIOWrapper) ->
     temp = get(result_dict, "temp")  # might be absent
 
     print()
-    pm10_kal_count = len(pm10_kal)
-    if pm10_kal_count == 0:
-        print(f"Geen nieuwe pm10 calibratie data gevonden sinds {till}")
+
+    # we want to get the union of timestamps of all new data
+    key_list = list(
+        set().union(
+            get_keylist(pm10_kal),
+            get_keylist(pm10),
+            get_keylist(pm25_kal),
+            get_keylist(pm25),
+            get_keylist(luchtvochtigheid),
+            get_keylist(temp),
+        )
+    )
+    key_list.sort()
+
+    key_count = len(key_list)
+    if key_count == 0:
+        print(f"Geen nieuwe data gevonden sinds {till}")
         return
 
-    print(f"Toevoegen {pm10_kal_count} resultaten aan csv bestand")
+    print(f"Toevoegen {key_count} resultaten aan csv bestand")
 
-    pm10_kal_keys = list(pm10_kal.keys())
-    pm10_kal_keys.sort()
-    sorted_pm10_kal = {i: pm10_kal[i] for i in pm10_kal_keys}
-    for key, value in sorted_pm10_kal.items():
+    for key in key_list:
         datetime_str_local = datetime_to_datetime_str(
             utc_to_local(iso8601_to_datetime(key))
         )
-        data_to_write = f"{datetime_str_local},{value},{get(pm10, key)},{get(pm25_kal, key)},{get(pm25, key)},{get(luchtvochtigheid, key)},{get(temp, key)}\n"  # noqa
+        data_to_write = f"{datetime_str_local},{get(pm10_kal, key)},{get(pm10, key)},{get(pm25_kal, key)},{get(pm25, key)},{get(luchtvochtigheid, key)},{get(temp, key)}\n"  # noqa
         data_to_write = data_to_write.replace("None", "")  # None values handle as empty
         if D:
             print(data_to_write, end="")
