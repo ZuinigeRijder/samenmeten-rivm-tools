@@ -17,7 +17,7 @@ Er zijn 3 python scripts:
 
 Voorbeeld van de [resultaten van fijnstof over 2022 van gemeente Heusden kun je hier vinden op Google My Maps](https://www.google.com/maps/d/edit?mid=1nyoEbCk_SXPRRWx5NF0R1Hr0dcx_big&usp=sharing).
 
-![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/HeusdenFijnstof2022.png)
+![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/examples/HeusdenFijnstof2022.png)
 
 Python als programmeertaal heeft het voordeel dat het draait op Windows, Linux en Mac. De python scripts maken gebruik van [https://api-samenmeten.rivm.nl/v1.0](https://samenmeten.nl/dataportaal/api-application-programming-interface) voor het ophalen van de gegevens.
 
@@ -315,7 +315,7 @@ python samenvatting.py 2022 _Heusden.txt
 
 Voorbeeld van de [resultaten van fijnstof over 2022 van gemeente Heusden kun je hier vinden op Google My Maps](https://www.google.com/maps/d/edit?mid=1nyoEbCk_SXPRRWx5NF0R1Hr0dcx_big&usp=sharing).
 
-![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/HeusdenFijnstof2022.png)
+![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/examples/HeusdenFijnstof2022.png)
 
 Wanneer een meetstation boven de WHO waardes zit, dan wordt dit weergegeven als ![alt text](https://maps.google.com/mapfiles/kml/shapes/firedept.png) anders als ![alt text](https://maps.google.com/mapfiles/kml/shapes/parks.png) (of als er geen meetdata voor laatste jaar is).
 De gemiddeldes van alle meetstations uit de lijst wordt ergens in het midden van de coördinaten weergegeven, boven de WHO waardes als ![alt text](https://maps.google.com/mapfiles/kml/shapes/schools.png) anders als ![alt text](https://maps.google.com/mapfiles/kml/shapes/ranger_station.png)
