@@ -789,7 +789,6 @@ def handle_station_list(station_name_list: str) -> None:
     keys = list(YEARLY_GRAND_TOTALS.keys())
     keys.sort()
     sorted_yearly = {i: YEARLY_GRAND_TOTALS[i] for i in keys}
-    kml_writeln("<Placemark>")
     # just put the overall somewhere in the middle of the coordinates
     klm_write_placemark(
         station_name_list,
@@ -822,8 +821,7 @@ def handle_station_list(station_name_list: str) -> None:
 with Path(f"{STATION_NAME_LIST}.kml").open("w", encoding="utf-8") as KML.output_file:
     now_str = datetime_to_datetime_str(datetime.now())
     kml_writeln(
-        """
-<?xml version="1.0" encoding="UTF-8"?>
+        """<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
 <Style id="homeOkStyle"><IconStyle><Icon>
