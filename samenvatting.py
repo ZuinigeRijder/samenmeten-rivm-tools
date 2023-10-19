@@ -139,16 +139,43 @@ KEYWORD_LIST = [
     "debug",
 ]
 
-# only generate summary until this year, default till current year
-UNTIL_YEAR = datetime.now().strftime("%Y")
-
 KEYWORD_ERROR = False
 STATION_NAME_LIST = ""
+
+# filters
+YEAR_FROM = 2000
+YEAR_UNTIL = 3000
+MONTH_FROM = 1
+MONTH_UNTIL = 12
+HOUR_FROM = 0
+HOUR_UNTIL = 23
+year_filter_regex = re.compile(r"^j(\d+)-(\d+)$")
+month_filter_regex = re.compile(r"^m(\d+)-(\d+)$")
+hour_filter_regex = re.compile(r"^u(\d+)-(\d+)$")
 for kindex in range(1, len(sys.argv)):
     if sys.argv[kindex].lower() not in KEYWORD_LIST:
         arg = sys.argv[kindex]
-        if len(arg) == 4 and arg.isnumeric():
-            UNTIL_YEAR = f"{arg}"
+        if year_filter_regex.search(arg.lower().strip()):
+            year_filter = year_filter_regex.search(arg.lower().strip())
+            YEAR_FROM = int(year_filter.group(1))
+            YEAR_UNTIL = int(year_filter.group(2))
+            print(
+                f"Jaar filter : {arg:12s} Van: {YEAR_FROM:5d} Tot en met: {YEAR_UNTIL:5d}"  # noqa
+            )
+        elif month_filter_regex.search(arg.lower().strip()):
+            month_filter = month_filter_regex.search(arg.lower().strip())
+            MONTH_FROM = int(month_filter.group(1))
+            MONTH_UNTIL = int(month_filter.group(2))
+            print(
+                f"Maand filter: {arg:12s} Van: {MONTH_FROM:5d} Tot en met: {MONTH_UNTIL:5d}"  # noqa
+            )
+        elif hour_filter_regex.search(arg.lower().strip()):
+            hour_filter = hour_filter_regex.search(arg.lower().strip())
+            HOUR_FROM = int(hour_filter.group(1))
+            HOUR_UNTIL = int(hour_filter.group(2))
+            print(
+                f"Uur filter  : {arg:12s} Van: {HOUR_FROM:5d} Tot en met: {HOUR_UNTIL:5d}"  # noqa
+            )
         elif STATION_NAME_LIST != "":
             print("Onbekende parameter: " + arg)
             KEYWORD_ERROR = True
@@ -163,15 +190,23 @@ if STATION_NAME_LIST == "" or not Path(STATION_NAME_LIST).is_file():
 if len(sys.argv) < 2 or KEYWORD_ERROR or arg_has("help"):
     print(
         """
-Gebruik  : python samenvatting.py [uur] [dag] [week] [maand] [jjjj] STATION_LIJST.txt
+Gebruik  : python samenvatting.py STATION_LIJST.txt
 Voorbeeld: python samenvatting.py _heusden.txt
+Opties   : [uur] [dag] [week] [maand] [j2000-3000] [m1-12] [u0-23]
 
-Opm.1: Wilt u alleen tot en met een bepaald jaar een samenvatting hebben,
-       kunt u parameter jjjj gebruiken, bijvoorbeeld 2022
-Opm.2: Wilt u alle details zien, gebruik parameter uur/dag/week/maand
-Opm.3: station namen van een gemeente kan opgevraagd worden met tool:
+Opm.1: Wilt u meer details zien, gebruik parameter uur/dag/week/maand
+Opm.2: Wilt u alleen bepaalde jaren mee te nemen,
+       kunt u filteren met optie [j2000-3000]:
+       bijvoorbeeld alleen jaren 2021 tot en met 2022: j2021-2022
+Opm.3: Wilt u alleen bepaalde maanden mee te nemen,
+       kunt u filteren met optie [m1-12]:
+       bijvoorbeeld alleen de maanden november tot en met maart: m11-3
+Opm.4: Wilt u alleen bepaalde uren mee te nemen,
+       kunt u filteren met optie [u0-23]:
+       bijvoorbeeld alleen de uren van 18:00 tot en met 02:00: u18-2
+Opm.5: station namen van een gemeente kan opgevraagd worden met tool:
             python gemeente_station_namen.py gemeente_code
-Opm.4: Voordat dit script gedraaid wordt, moeten de .csv bestanden voor
+Opm.6: Voordat dit script gedraaid wordt, moeten de .csv bestanden voor
        deze STATION_LIJST.txt gegenereerd zijn met:
             python station_data_naar_csv.py STATION_LIJST.txt
     """
@@ -266,7 +301,9 @@ def klm_write_placemark(
     else:
         get_write_kml_coordinates(name)
     kml_writeln("<description>")
-    kml_writeln(f"{name}\nJaar PM10/PM2.5 (dagen) #WHO Daglimiet PM10/PM2.5")
+    kml_writeln(f"{name}\n")
+    kml_writeln("Jaar PM10/PM2.5 (dagen) #WHO Daglimiet")
+    kml_writeln("==================================\n")
 
 
 def kml_write_name(year: Totals, name: str, home: bool = False) -> None:
@@ -376,16 +413,53 @@ def get_next_csv_line() -> str:
         if line != READAHEAD.line:  # skip identical lines
             line = line.strip()
             # only lines with content (starts with year 20yy)
-            if line.startswith("20") and len(line) > 4 and line[:4] <= UNTIL_YEAR:
-                index = line.find(",")
-                next_line = READAHEAD.line.strip()
-                read_ahead_index = next_line.find(",")
-                # skip identical lines, when only first column (datetime) is the same
-                if index >= 0 and (
-                    read_ahead_index < 0 or next_line[read_ahead_index:] != line[index:]
-                ):
-                    _ = D and dbg(f"next=[{line}]")
-                    return line
+            if len(line) > 16 and line.startswith("20"):
+                skip = False
+
+                if YEAR_FROM != 2000 or YEAR_UNTIL != 3000:
+                    # filter on year
+                    year = int(line[:4])
+                    skip = year < YEAR_FROM or year > YEAR_UNTIL
+                    if D:
+                        print(
+                            f"year: {year} skip: {skip} from: {YEAR_FROM} to: {YEAR_UNTIL}"  # noqa
+                        )
+
+                if not skip and (MONTH_FROM != 1 or MONTH_UNTIL != 12):
+                    # filter on month
+                    month = int(line[5:7])
+                    if MONTH_FROM <= MONTH_UNTIL:
+                        skip = month < MONTH_FROM or month > MONTH_UNTIL
+                    else:
+                        skip = not (month >= MONTH_FROM or month <= MONTH_UNTIL)
+                    if D:
+                        print(
+                            f"month: {month} skip: {skip} from: {MONTH_FROM} to: {MONTH_UNTIL}"  # noqa
+                        )
+
+                if not skip and (HOUR_FROM != 0 or HOUR_UNTIL != 23):
+                    # filter on hour
+                    hour = int(line[11:13])
+                    if HOUR_FROM <= HOUR_UNTIL:
+                        skip = hour < HOUR_FROM or hour > HOUR_UNTIL
+                    else:
+                        skip = not (hour >= HOUR_FROM or hour <= HOUR_UNTIL)
+                    if D:
+                        print(
+                            f"hour: {hour} skip: {skip} from: {HOUR_FROM} to: {HOUR_UNTIL}"  # noqa
+                        )
+
+                if not skip:
+                    index = line.find(",")
+                    next_line = READAHEAD.line.strip()
+                    read_ahead_index = next_line.find(",")
+                    # skip identical lines, when only first column (datetime) is same
+                    if index >= 0 and (
+                        read_ahead_index < 0
+                        or next_line[read_ahead_index:] != line[index:]
+                    ):
+                        _ = D and dbg(f"next=[{line}]")
+                        return line
 
         _ = D and dbg(f"skip=[{line}]")
 
@@ -511,13 +585,13 @@ def print_summary(prefix: str, values: Totals, year: Totals) -> None:
         pm25_kal_avg = year.pm25_kal_avg / elapsed_hours
         number_of_days = int(year.elapsed_hours / 24)
         kml_writeln(
-            f'{year.current_day.strftime("%Y"):4s} {pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d) #{year.who_pm10_daily}/{year.who_pm25_daily}'  # noqa
+            f'{year.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d) #{year.who_pm10_daily}/{year.who_pm25_daily}'  # noqa
         )
         comment = get_comment(prefix_starts_with_year, pm10_kal_avg, pm25_kal_avg, year)
         output += comment
         if comment != "":
             comment = comment.replace("; ", "\n     ")
-            kml_writeln(f"     {comment}")
+            kml_writeln(f"{comment}\n")
     else:
         comment = get_comment(
             prefix_starts_with_year, t_pm10_kal_avg, t_pm25_kal_avg, year
@@ -806,11 +880,11 @@ def handle_station_list(station_name_list: str) -> None:
         print_output_formatted(output)
         number_of_days = int(yearly.elapsed_hours / 24)
         kml_writeln(
-            f'{yearly.current_day.strftime("%Y"):4s} {pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d) #{yearly.who_pm10_daily}/{yearly.who_pm25_daily}'  # noqa
+            f'{yearly.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d) #{yearly.who_pm10_daily}/{yearly.who_pm25_daily}'  # noqa
         )
         if comment != "":
             comment = comment.replace("; ", "\n     ")
-            kml_writeln(f"     {comment}")
+            kml_writeln(f"{comment}\n")
 
     kml_writeln("</description>")
     last_year = YEARLY_GRAND_TOTALS[keys[-1]]

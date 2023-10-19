@@ -170,7 +170,7 @@ Uitvoer csv bestand: LTD_54329.csv
 
 Voorbeeld van (gedeeltelijke) inhoud van zo een csv bestand, bijvoorbeeld LTD_54329:
 ```
-datetime,pm10_kal,pm10,pm25_kal,pm25,rh%,temp
+datetime,pm10 kal,pm10,pm2.5 kal,pm2.5,rh%,temp
 2021-11-21 13:00,6.942,8.88,2.574,1.76,68.32,12.33
 2021-11-21 14:00,10.3,10.04,2.988,1.78,76.87,9.77
 2021-11-21 15:00,8.32,6.42,,1.38,80.07,8.98
@@ -197,17 +197,25 @@ Voer het volgende commando uit voor hulp:
 python samenvatting.py
 Onbekend invoer bestand:
 
-Gebruik  : python samenvatting.py [dag] [week] [maand] [jjjj] STATION_LIJST.txt
+Gebruik  : python samenvatting.py STATION_LIJST.txt
 Voorbeeld: python samenvatting.py _heusden.txt
+Opties   : [uur] [dag] [week] [maand] [j2000-3000] [m1-12] [u0-23]
 
-Opm.1: Wilt u alleen tot en met een bepaald jaar een samenvatting hebben,
-       kunt u parameter jjjj gebruiken, bijvoorbeeld 2022
-Opm.2: Wilt u alle details zien per dag/week/maand, kunt u deze als parameter meegeven
-Opm.3: station namen van een gemeente kan opgevraagd worden met tool:
+Opm.1: Wilt u meer details zien, gebruik parameter uur/dag/week/maand
+Opm.2: Wilt u alleen bepaalde jaren mee te nemen,
+       kunt u filteren met optie [j2000-3000]:
+       bijvoorbeeld alleen jaren 2021 tot en met 2022: j2021-2022
+Opm.3: Wilt u alleen bepaalde maanden mee te nemen,
+       kunt u filteren met optie [m1-12]:
+       bijvoorbeeld alleen de maanden november tot en met maart: m11-3
+Opm.4: Wilt u alleen bepaalde uren mee te nemen,
+       kunt u filteren met optie [u0-23]:
+       bijvoorbeeld alleen de uren van 18:00 tot en met 02:00: u18-2
+Opm.5: station namen van een gemeente kan opgevraagd worden met tool:
             python gemeente_station_namen.py gemeente_code
-Opm.4: Voordat dit script gedraaid wordt, moeten de .csv bestanden voor
+Opm.6: Voordat dit script gedraaid wordt, moeten de .csv bestanden voor
        deze STATION_LIJST.txt gegenereerd zijn met:
-            python station_data_naar_csv.py STATION_LIST.txt
+            python station_data_naar_csv.py STATION_LIJST.txt
 ```
 
 Voorbeeld voor generenen samenvatting van _Heusden.txt:
@@ -308,9 +316,24 @@ GLB_1732427, JAAR 259d, 2023-09-17,  2023,    9,    0,  107,    1,    1,     9, 
 
 Het uitvoer kml bestand (de naam van je invoer bestand met extensie .kml, bijvoorbeeld _Heusden.txt.kml) kun je importeren in Google My Maps.
 
-Je kunt ook alleen een samenvatting genereren tot een volledig jaar, bijvoorbeeld:
+Je kunt ook alleen een samenvatting genereren van een of meerdere volledige jaren, bijvoorbeeld 2021 en 2022:
 ```
-python samenvatting.py 2022 _Heusden.txt
+python samenvatting.py j2021-2022 _Heusden.txt
+```
+
+Je kunt ook alleen een samenvatting genereren van bepaalde maanden, bijvoorbeeld november tot en met maart:
+```
+python samenvatting.py m11-3 _Heusden.txt
+```
+
+Je kunt ook alleen een samenvatting genereren van bepaalde uren, bijvoorbeeld van 18:00 tot en met 04:00:
+```
+python samenvatting.py u18-4 _Heusden.txt
+```
+
+En je kunt de jaar-, maand- en uur-filters ook combineren.
+```
+python samenvatting.py j2021-2022 u18-4 m11-3 _Heusden.txt
 ```
 
 Voorbeeld van de [resultaten van fijnstof over 2022 van gemeente Heusden kun je hier vinden op Google My Maps](https://www.google.com/maps/d/edit?mid=1nyoEbCk_SXPRRWx5NF0R1Hr0dcx_big&usp=sharing).
