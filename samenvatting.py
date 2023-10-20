@@ -126,6 +126,7 @@ TEMP = 6
 # globals
 KML = KmlData()
 STATION_NAME: str = ""
+STATION_NAME_KML_PRINTED = True
 READAHEAD = Readahead([], [])
 GRAND_TOTALS: GrandTotals = GrandTotals(None, None, None, None)
 YEARLY_GRAND_TOTALS: dict[str, Totals] = {}
@@ -245,6 +246,11 @@ def deepcopy_totals(name: str, current_day_values: Totals) -> Totals:
 
 def kml_writeln(line: str) -> None:
     """kml_writeln"""
+    global STATION_NAME_KML_PRINTED  # pylint:disable=global-statement
+    if not STATION_NAME_KML_PRINTED:
+        STATION_NAME_KML_PRINTED = True
+        klm_write_placemark(STATION_NAME)
+
     KML.output_file.write(line)
     KML.output_file.write("\n")
 
@@ -324,7 +330,7 @@ def kml_write_name(year: Totals, name: str, home: bool = False) -> None:
     who_exceeded = who_exceeded_pm10 or who_exceeded_pm25
     number_of_days = int(year.elapsed_hours / 24)
     kml_writeln(
-        f"<name>{pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d)</name>"  # noqa
+        f"<name>{name} {pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d)</name>"  # noqa
     )  # noqa
     if home:
         if who_exceeded:
@@ -393,8 +399,18 @@ def get_next_csv_line() -> str:
     Does fill CSV_READ_AHEAD_LINE (for external use)
     """
     while not READAHEAD.file_eol:
+        skip = False
         if READAHEAD.read_done_once:  # read 1 line
             line = READAHEAD.line
+            if READAHEAD.next_split[DT] == READAHEAD.curr_split[DT]:
+                # skip lines with identical timestamp
+                # probably this is Summer/Winter time change
+                if D:
+                    print(
+                        f"Warning: timestamp same, skipping: {READAHEAD.linecount} {line}\nSPLIT: {READAHEAD.next_split}\nPREV : {READAHEAD.curr_split}"  # noqa
+                    )
+                skip = True
+
             READAHEAD.curr_split = READAHEAD.next_split
         else:  # read 2 lines
             READAHEAD.read_done_once = True
@@ -410,13 +426,13 @@ def get_next_csv_line() -> str:
             READAHEAD.next_split = []
             break  # finished
 
-        if line != READAHEAD.line:  # skip identical lines
+        if (
+            not skip or line != READAHEAD.line
+        ):  # skip lines with identical timestamp or identical lines
             line = line.strip()
             # only lines with content (starts with year 20yy)
             if len(line) > 16 and line.startswith("20"):
-                skip = False
-
-                if YEAR_FROM != 2000 or YEAR_UNTIL != 3000:
+                if not skip and (YEAR_FROM != 2000 or YEAR_UNTIL != 3000):
                     # filter on year
                     year = int(line[:4])
                     skip = year < YEAR_FROM or year > YEAR_UNTIL
@@ -450,16 +466,14 @@ def get_next_csv_line() -> str:
                         )
 
                 if not skip:
-                    index = line.find(",")
-                    next_line = READAHEAD.line.strip()
-                    read_ahead_index = next_line.find(",")
-                    # skip identical lines, when only first column (datetime) is same
-                    if index >= 0 and (
-                        read_ahead_index < 0
-                        or next_line[read_ahead_index:] != line[index:]
-                    ):
-                        _ = D and dbg(f"next=[{line}]")
-                        return line
+                    skip = (
+                        get_kal_float(PM10_KAL, READAHEAD.curr_split) < 0.0
+                        or get_kal_float(PM25_KAL, READAHEAD.curr_split) < 0.0
+                    )
+
+                if not skip:
+                    _ = D and dbg(f"next=[{line}]")
+                    return line
 
         _ = D and dbg(f"skip=[{line}]")
 
@@ -673,11 +687,7 @@ def keep_track_of_totals(split: list[str]) -> None:
         dbg("    before: " + str(GRAND_TOTALS))
 
     pm10_kal = get_kal_float(PM10_KAL, split)
-    if pm10_kal < 0.0:
-        return  # skip uncalibrated values
     pm25_kal = get_kal_float(PM25_KAL, split)
-    if pm25_kal < 0.0:
-        return  # skip uncalibrated values
 
     # update day totals
     GRAND_TOTALS.day.elapsed_hours += 1
@@ -744,13 +754,11 @@ def get_kal_float(index, split) -> float:
 
 
 def handle_line(
-    linecount: int,
     split: list[str],
-    prev_split: list[str],
     last: bool,
 ) -> None:
     """handle_line"""
-    _ = D and dbg(f"handle_line: {split}, {prev_split}")
+    _ = D and dbg(f"handle_line: {split}")
 
     current_day = parser.parse(split[DT])
     if not GRAND_TOTALS.day:
@@ -764,12 +772,6 @@ def handle_line(
         GRAND_TOTALS.week = deepcopy_totals("week", values)
         GRAND_TOTALS.month = deepcopy_totals("month", values)
         GRAND_TOTALS.year = deepcopy_totals("year", values)
-        return
-
-    if split[DT] == prev_split[DT] and not last:
-        _ = D and dbg(
-            f"Warning: timestamp same, skipping: {linecount}\nSPLIT: {split}\nPREV : {prev_split}"  # noqa
-        )
         return
 
     # take into account totals per line
@@ -798,7 +800,6 @@ def handle_line(
 def summary() -> None:
     """summary of monitor.csv file"""
     prev_line: str = ""
-    prev_split: list[str] = []
     GRAND_TOTALS.day = None
     GRAND_TOTALS.week = None
     GRAND_TOTALS.month = None
@@ -810,28 +811,25 @@ def summary() -> None:
             break  # finish loop
         _ = D and dbg(str(READAHEAD.linecount) + ": LINE=[" + line + "]")
         split = READAHEAD.curr_split
-        handle_line(READAHEAD.linecount, split, prev_split, False)
+        handle_line(split, False)
 
         prev_line = line
-        prev_split = split
 
     # also compute last last day/week/month
     _ = D and dbg("Handling last values")
     # handle end of day for last value
     eod_line = prev_line[0:11] + "23:59" + prev_line[16:]
     last_split = split_on_comma(eod_line)
-    _ = D and dbg(
-        f"prev_line: {prev_line}\n eod_line: {eod_line}\n{prev_split}\n{last_split}"
-    )
+    _ = D and dbg(f"prev_line: {prev_line}\n eod_line: {eod_line}\n{last_split}")
     if prev_line != "":
-        handle_line(READAHEAD.linecount, last_split, prev_split, False)
+        handle_line(last_split, False)
         # and show summaries
-        handle_line(READAHEAD.linecount, last_split, last_split, True)
+        handle_line(last_split, True)
 
 
 def handle_station_list(station_name_list: str) -> None:
     """handle_station_list"""
-    global STATION_NAME, READAHEAD  # pylint:disable=global-statement
+    global STATION_NAME, STATION_NAME_KML_PRINTED, READAHEAD  # noqa pylint:disable=global-statement
     input_file = Path(station_name_list)
     if not input_file.is_file():
         raise ValueError(f"{station_name_list} invoer bestand bestaat niet")
@@ -842,6 +840,7 @@ def handle_station_list(station_name_list: str) -> None:
             name = name.strip()
             if name != "":
                 STATION_NAME = name
+                STATION_NAME_KML_PRINTED = False
                 input_csv_file = Path(name + ".csv")
                 if not input_csv_file.is_file():
                     raise ValueError(f"FOUT: bestand bestaat niet: {input_csv_file}")
@@ -850,20 +849,22 @@ def handle_station_list(station_name_list: str) -> None:
                 READAHEAD = Readahead([], [])
                 READAHEAD.file = input_csv_file.open("r", encoding="utf-8")
 
-                klm_write_placemark(name)
-
                 summary()  # do the work
 
-                kml_writeln("</description>")
-                kml_write_name(GRAND_TOTALS.year, name)
-                kml_writeln("</Placemark>")
+                if STATION_NAME_KML_PRINTED:  # only write kml if something written
+                    kml_writeln("</description>")
+                    kml_write_name(GRAND_TOTALS.year, name)
+                    kml_writeln("</Placemark>")
                 READAHEAD.file.close()
+                STATION_NAME_KML_PRINTED = True
                 print()
 
     keys = list(YEARLY_GRAND_TOTALS.keys())
     keys.sort()
     sorted_yearly = {i: YEARLY_GRAND_TOTALS[i] for i in keys}
     # just put the overall somewhere in the middle of the coordinates
+
+    STATION_NAME_KML_PRINTED = True
     klm_write_placemark(
         station_name_list,
         (KML.max_lat + KML.min_lat) / 2,
