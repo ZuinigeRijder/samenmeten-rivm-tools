@@ -51,7 +51,8 @@ def get_observations_values(url: str, till: str) -> dict:
     result_dict = {}
     finished = False
     while not finished:
-        print(f"@iot.nextLink={url}")
+        if D or "skip" in url:
+            print(f"\t\t\t@iot.nextLink={url}")
         content = execute_request(url)
         observations_values = json.loads(content)
         for measurement in get(observations_values, "value"):
@@ -88,7 +89,7 @@ def get_observations_data(streams_data: dict, till: str, file: TextIOWrapper) ->
         data_type = split[len(split) - 1]  # last entry contains data type
         if data_type in match:
             url = get(item, "Observations@iot.navigationLink", "navigationLink absent")
-            print(f"\nOphalen data voor type: {data_type}")
+            print(f"Ophalen data voor type: {data_type} {url}")
             result_list = get_observations_values(url, till)
             result_dict[data_type] = result_list
 
@@ -98,8 +99,6 @@ def get_observations_data(streams_data: dict, till: str, file: TextIOWrapper) ->
     pm25 = get(result_dict, "pm25", "geen pm2.5 data")
     luchtvochtigheid = get(result_dict, "rh")  # might be absent
     temp = get(result_dict, "temp")  # might be absent
-
-    print()
 
     # we want to get the union of timestamps of all new data
     key_list = list(
@@ -116,10 +115,10 @@ def get_observations_data(streams_data: dict, till: str, file: TextIOWrapper) ->
 
     key_count = len(key_list)
     if key_count == 0:
-        print(f"Geen nieuwe data gevonden sinds {till}")
+        print(f"Geen nieuwe data gevonden sinds {till}\n")
         return
 
-    print(f"Toevoegen {key_count} resultaten aan csv bestand")
+    print(f"Toevoegen {key_count} resultaten aan csv bestand\n")
 
     for key in key_list:
         datetime_str_local = datetime_to_datetime_str(

@@ -330,7 +330,7 @@ def kml_write_name(year: Totals, name: str, home: bool = False) -> None:
     who_exceeded = who_exceeded_pm10 or who_exceeded_pm25
     number_of_days = int(year.elapsed_hours / 24)
     kml_writeln(
-        f"<name>{name} {pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d)</name>"  # noqa
+        f"<name>{pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d)</name>"  # noqa
     )  # noqa
     if home:
         if who_exceeded:
@@ -565,7 +565,7 @@ def print_summary(prefix: str, values: Totals, year: Totals) -> None:
         if not DAY:
             return  # nothing to print
 
-    output = f"{STATION_NAME},{prefix}, {t_pm10_kal_avg:.0f}, {values.pm10_kal_min:.0f}, {values.pm10_kal_max:.0f}, {year.who_pm10_daily}, {year.eu_pm10_daily}, {t_pm25_kal_avg:.0f}, {values.pm25_kal_min:.0f}, {values.pm25_kal_max:.0f}, {year.who_pm25_daily},"  # noqa
+    output = f"{STATION_NAME},{prefix}, {t_pm10_kal_avg:.1f}, {values.pm10_kal_min:.0f}, {values.pm10_kal_max:.0f}, {year.who_pm10_daily}, {year.eu_pm10_daily}, {t_pm25_kal_avg:.1f}, {values.pm25_kal_min:.0f}, {values.pm25_kal_max:.0f}, {year.who_pm25_daily},"  # noqa
 
     prefix_starts_with_year = prefix.startswith("JAAR")
     if prefix_starts_with_year:
@@ -599,7 +599,7 @@ def print_summary(prefix: str, values: Totals, year: Totals) -> None:
         pm25_kal_avg = year.pm25_kal_avg / elapsed_hours
         number_of_days = int(year.elapsed_hours / 24)
         kml_writeln(
-            f'{year.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d) #{year.who_pm10_daily}/{year.who_pm25_daily}'  # noqa
+            f'{year.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d) #{year.who_pm10_daily}/{year.who_pm25_daily}'  # noqa
         )
         comment = get_comment(prefix_starts_with_year, pm10_kal_avg, pm25_kal_avg, year)
         output += comment
@@ -620,7 +620,7 @@ def print_summaries(current_day_values: Totals, last: bool) -> None:
     day_str = GRAND_TOTALS.day.current_day.strftime("%Y-%m-%d")
 
     if not same_day(current_day, GRAND_TOTALS.day.current_day) or last:
-        day_info = GRAND_TOTALS.day.current_day.strftime("%a")
+        day_info = GRAND_TOTALS.day.current_day.strftime("%a WK%W")
         print_summary(
             f"DAG     , {day_str}, {day_info}",
             GRAND_TOTALS.day,
@@ -766,8 +766,6 @@ def handle_line(
             f"not TDAY: {GRAND_TOTALS.day} first time, fill in with initial values"
         )
         values = init(current_day, split)
-        if values.pm10_kal_avg < 0.0 or values.pm25_kal_avg < 0.0:
-            return  # no calibrated value yet
         GRAND_TOTALS.day = deepcopy_totals("day", values)
         GRAND_TOTALS.week = deepcopy_totals("week", values)
         GRAND_TOTALS.month = deepcopy_totals("month", values)
@@ -778,15 +776,12 @@ def handle_line(
     if not last:  # skip keep_track_of_totals for last entry
         if UUR:
             values = init(current_day, split)
-            if values.pm10_kal_avg >= 0.0 and values.pm25_kal_avg >= 0.0:
-                year = GRAND_TOTALS.year
-                day_info = current_day.strftime("%Y-%m-%d")
-                uur_info = current_day.strftime("%H:%M")
-                output = f"{STATION_NAME}, UUR, {day_info}, {uur_info}, {values.pm10_kal_avg:.0f}, {year.pm10_kal_min:.0f}, {year.pm10_kal_max:.0f}, {year.who_pm10_daily}, {year.eu_pm10_daily}, {values.pm25_kal_avg:.0f}, {year.pm25_kal_min:.0f}, {year.pm25_kal_max:.0f}, {year.who_pm25_daily},"  # noqa
-                output += get_comment(
-                    False, values.pm10_kal_avg, values.pm25_kal_avg, year
-                )
-                print_output_formatted(output)
+            year = GRAND_TOTALS.year
+            day_info = current_day.strftime("%Y-%m-%d")
+            uur_info = current_day.strftime("%H:%M %a WK%W")
+            output = f"{STATION_NAME}, UUR, {day_info}, {uur_info}, {values.pm10_kal_avg:.1f}, {year.pm10_kal_min:.0f}, {year.pm10_kal_max:.0f}, {year.who_pm10_daily}, {year.eu_pm10_daily}, {values.pm25_kal_avg:.1f}, {year.pm25_kal_min:.0f}, {year.pm25_kal_max:.0f}, {year.who_pm25_daily},"  # noqa
+            output += get_comment(False, values.pm10_kal_avg, values.pm25_kal_avg, year)
+            print_output_formatted(output)
 
         keep_track_of_totals(split)
 
@@ -875,13 +870,13 @@ def handle_station_list(station_name_list: str) -> None:
         pm10_kal_avg = yearly.pm10_kal_avg / elapsed_hours
         pm25_kal_avg = yearly.pm25_kal_avg / elapsed_hours
         day_str = yearly.current_day.strftime("%Y-%m-%d")
-        output = f"Gemiddelde,JAAR,{day_str},{key},{pm10_kal_avg:.0f}, {yearly.pm10_kal_min:.0f}, {yearly.pm10_kal_max:.0f}, {yearly.who_pm10_daily}, {yearly.eu_pm10_daily}, {pm25_kal_avg:.0f}, {yearly.pm25_kal_min:.0f}, {yearly.pm25_kal_max:.0f}, {yearly.who_pm25_daily},"  # noqa
+        output = f"Gemiddelde,JAAR,{day_str},{key},{pm10_kal_avg:.1f}, {yearly.pm10_kal_min:.0f}, {yearly.pm10_kal_max:.0f}, {yearly.who_pm10_daily}, {yearly.eu_pm10_daily}, {pm25_kal_avg:.1f}, {yearly.pm25_kal_min:.0f}, {yearly.pm25_kal_max:.0f}, {yearly.who_pm25_daily},"  # noqa
         comment = get_comment(True, pm10_kal_avg, pm25_kal_avg, yearly)
         output += comment
         print_output_formatted(output)
         number_of_days = int(yearly.elapsed_hours / 24)
         kml_writeln(
-            f'{yearly.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.0f}/{pm25_kal_avg:.0f} ({number_of_days}d) #{yearly.who_pm10_daily}/{yearly.who_pm25_daily}'  # noqa
+            f'{yearly.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d) #{yearly.who_pm10_daily}/{yearly.who_pm25_daily}'  # noqa
         )
         if comment != "":
             comment = comment.replace("; ", "\n     ")
