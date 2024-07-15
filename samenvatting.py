@@ -134,6 +134,11 @@ READAHEAD = Readahead([], [])
 GRAND_TOTALS: GrandTotals = GrandTotals(None, None, None, None, None)
 AVERAGE_GRAND_TOTALS: dict[str, Totals] = {}
 
+# PM2.5 AND PM10 dictionary for writing at the end the PM2.5 and PM10 .csv files
+PM25_DICT: dict[str, str] = {}
+PM10_DICT: dict[str, str] = {}
+YEARS_DICT: dict[int, str] = {}
+
 KEYWORD_LIST = [
     "uur",
     "dag",
@@ -348,7 +353,7 @@ def kml_write_name(year: Totals, name: str, home: bool = False) -> None:
     kml_writeln(f"<styleUrl>#{style}</styleUrl>")
 
 
-COLUMN_WIDTHS = [11, 12, 10, 5, 5, 4, 4, 3, 3, 5, 4, 4, 3, 3, 1]
+COLUMN_WIDTHS = [11, 12, 10, 7, 5, 4, 4, 3, 3, 5, 4, 4, 3, 3, 1]
 
 
 def format_output(output: str) -> str:
@@ -607,14 +612,21 @@ def print_summary(prefix: str, values: Totals) -> None:
         pm10_kal_avg = GRAND_TOTALS.year.pm10_kal_avg / elapsed_hours
         pm25_kal_avg = GRAND_TOTALS.year.pm25_kal_avg / elapsed_hours
         number_of_days = int(GRAND_TOTALS.year.elapsed_hours / 24)
+        year = f'{GRAND_TOTALS.year.current_day.strftime("%Y"):4s}'
         kml_writeln(
-            f'{GRAND_TOTALS.year.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d) #{GRAND_TOTALS.year.who_pm10_daily}/{GRAND_TOTALS.year.who_pm25_daily}'  # noqa
+            f"{year}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d) #{GRAND_TOTALS.year.who_pm10_daily}/{GRAND_TOTALS.year.who_pm25_daily}"  # noqa
         )
         comment = get_comment(True, pm10_kal_avg, pm25_kal_avg, GRAND_TOTALS.year)
         output += comment
         if comment != "":
             comment = comment.replace("; ", "\n")
             kml_writeln(f"{comment}\n")
+
+        # keep track of station/years/PM2.5/PM10
+        PM25_DICT[f"{STATION_NAME},{year}"] = f"{pm25_kal_avg:.1f}"
+        PM10_DICT[f"{STATION_NAME},{year}"] = f"{pm10_kal_avg:.1f}"
+        YEARS_DICT[year] = True
+
     elif prefix.startswith("ALLES"):
         elapsed_hours = max(values.elapsed_hours, 1)
         pm10_kal_avg = values.pm10_kal_avg / elapsed_hours
@@ -824,6 +836,44 @@ def summary() -> None:
         handle_line(last_split, True)
 
 
+def write_pm_csv_file(
+    pm_file: TextIOWrapper, years: list[str], pm_dict: dict[str, str]
+):
+    """write_pm_csv_file"""
+    year_index = 0
+    current_station = ""
+    for pm_key in sorted(pm_dict):
+        (station, year) = pm_key.split(",")
+        if current_station != station:
+            pm_file.write(f"\n{station}")
+            current_station = station
+            year_index = 0
+        while year_index < len(years) and years[year_index] != year:
+            pm_file.write(",")
+            year_index += 1
+        pm_file.write(f",{pm_dict[pm_key]}")
+        year_index += 1
+    pm_file.write("\n")
+
+
+def write_pm25_pm10_csv_files():
+    """write_pm25_pm10_csv_files"""
+    header = "Station"
+    years = list(YEARS_DICT.keys())
+    years.sort()
+    for year in years:
+        header += ","
+        header += year
+
+    with Path(f"{STATION_NAME_LIST}.pm25.csv").open("w", encoding="utf-8") as pm25_file:
+        pm25_file.write(f"{header}")
+        write_pm_csv_file(pm25_file, years, PM25_DICT)
+
+    with Path(f"{STATION_NAME_LIST}.pm10.csv").open("w", encoding="utf-8") as pm10_file:
+        pm10_file.write(f"{header}")
+        write_pm_csv_file(pm10_file, years, PM10_DICT)
+
+
 def handle_station_list(station_name_list: str) -> None:
     """handle_station_list"""
     global STATION_NAME, STATION_NAME_KML_PRINTED, READAHEAD  # noqa pylint:disable=global-statement
@@ -859,6 +909,7 @@ def handle_station_list(station_name_list: str) -> None:
                     kml_writeln("</description>")
                     kml_write_name(all_years, name)
                     kml_writeln("</Placemark>")
+                    print_header()
                 READAHEAD.file.close()
                 STATION_NAME_KML_PRINTED = True
                 print()
@@ -910,6 +961,7 @@ def handle_station_list(station_name_list: str) -> None:
                 comment = comment.replace("; ", "\n     ")
                 kml_writeln(f"{comment}\n")
 
+    print_header()
     kml_writeln("</description>")
     last_year = AVERAGE_GRAND_TOTALS[keys[-1]]
     kml_write_name(last_year, station_name_list, True)
@@ -938,3 +990,5 @@ with Path(f"{STATION_NAME_LIST}.kml").open("w", encoding="utf-8") as KML.output_
 
     kml_writeln("</Document>")
     kml_writeln("</kml>")
+
+write_pm25_pm10_csv_files()
