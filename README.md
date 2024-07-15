@@ -6,9 +6,9 @@
   - [Voorbeeld van (gedeeltelijke uitvoer), gebruik makend van meetstation namen in \_Heusden.txt](#voorbeeld-van-gedeeltelijke-uitvoer-gebruik-makend-van-meetstation-namen-in-_heusdentxt)
   - [Voorbeeld van (gedeeltelijke) inhoud van zo een csv bestand, bijvoorbeeld LTD\_54329](#voorbeeld-van-gedeeltelijke-inhoud-van-zo-een-csv-bestand-bijvoorbeeld-ltd_54329)
 - [Python script samenvatting.py](#python-script-samenvattingpy)
-  - [Voorbeeld voor generenen samenvatting van \_Heusden.txt](#voorbeeld-voor-generenen-samenvatting-van-_heusdentxt)
+  - [Voorbeeld voor genereren samenvatting van \_Heusden.txt](#voorbeeld-voor-genereren-samenvatting-van-_heusdentxt)
   - [Voorbeelden van filteren opties](#voorbeelden-van-filteren-opties)
-  - [Gegggenereerd .kml bestand](#gegggenereerd-kml-bestand)
+  - [Gegenereerd .kml bestand](#gegenereerd-kml-bestand)
   - [Voorbeeld van Google Maps op basis van .kml uitvoer](#voorbeeld-van-google-maps-op-basis-van-kml-uitvoer)
   - [Voorbeeld van gegenereerd PM2.5 .csv bestand: \_GemeenteHeusden.txt.pm10.csv](#voorbeeld-van-gegenereerd-pm25-csv-bestand-_gemeenteheusdentxtpm10csv)
   - [Voorbeeld van gegenereerd PM10 .csv bestand: \_GemeenteHeusden.txt.pm10.csv](#voorbeeld-van-gegenereerd-pm10-csv-bestand-_gemeenteheusdentxtpm10csv)
@@ -227,7 +227,7 @@ Opm.6: Voordat dit script gedraaid wordt, moeten de .csv bestanden voor
             python station_data_naar_csv.py STATION_LIJST.txt
 ```
 
-## Voorbeeld voor generenen samenvatting van _Heusden.txt
+## Voorbeeld voor genereren samenvatting van _Heusden.txt
 ```
 python samenvatting.py _Heusden.txt
     Station,   Periode,      Datum,  Info, PM10, (Min,  Max, #WHO, #EU), PM2.5, (Min,  Max, #WHO), Commentaar
@@ -344,7 +344,7 @@ En je kunt de jaar-, maand- en uur-filters ook combineren.
 python samenvatting.py j2021-2022 u18-4 m11-3 _Heusden.txt
 ```
 
-## Gegggenereerd .kml bestand
+## Gegenereerd .kml bestand
 Het uitvoer kml bestand (de naam van je invoer bestand met extensie .kml, bijvoorbeeld _Heusden.txt.kml) kun je importeren in [Google My Maps](https://mymaps.google.com).
 
 ## Voorbeeld van Google Maps op basis van .kml uitvoer
