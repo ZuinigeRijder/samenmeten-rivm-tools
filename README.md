@@ -1,8 +1,17 @@
 - [Inleiding](#inleiding)
 - [Hoe Python, pakketten te installeren](#hoe-python-pakketten-te-installeren)
-- [gemeente\_station\_namen.py](#gemeente_station_namenpy)
-- [station\_data\_naar\_csv.py](#station_data_naar_csvpy)
-- [samenvatting.py](#samenvattingpy)
+- [Python script gemeente\_station\_namen.py](#python-script-gemeente_station_namenpy)
+  - [Voorbeeld van uitvoer voor gemeente Heusden (797)](#voorbeeld-van-uitvoer-voor-gemeente-heusden-797)
+- [Python script station\_data\_naar\_csv.py](#python-script-station_data_naar_csvpy)
+  - [Voorbeeld van (gedeeltelijke uitvoer), gebruik makend van meetstation namen in \_Heusden.txt](#voorbeeld-van-gedeeltelijke-uitvoer-gebruik-makend-van-meetstation-namen-in-_heusdentxt)
+  - [Voorbeeld van (gedeeltelijke) inhoud van zo een csv bestand, bijvoorbeeld LTD\_54329](#voorbeeld-van-gedeeltelijke-inhoud-van-zo-een-csv-bestand-bijvoorbeeld-ltd_54329)
+- [Python script samenvatting.py](#python-script-samenvattingpy)
+  - [Voorbeeld voor generenen samenvatting van \_Heusden.txt](#voorbeeld-voor-generenen-samenvatting-van-_heusdentxt)
+  - [Voorbeelden van filteren opties](#voorbeelden-van-filteren-opties)
+  - [Gegggenereerd .kml bestand](#gegggenereerd-kml-bestand)
+  - [Voorbeeld van Google Maps op basis van .kml uitvoer](#voorbeeld-van-google-maps-op-basis-van-kml-uitvoer)
+  - [Voorbeeld van gegenereerd PM2.5 .csv bestand: \_GemeenteHeusden.txt.pm10.csv](#voorbeeld-van-gegenereerd-pm25-csv-bestand-_gemeenteheusdentxtpm10csv)
+  - [Voorbeeld van gegenereerd PM10 .csv bestand: \_GemeenteHeusden.txt.pm10.csv](#voorbeeld-van-gegenereerd-pm10-csv-bestand-_gemeenteheusdentxtpm10csv)
 
 
 
@@ -36,7 +45,7 @@ Ik heb de volgende pakketten geïnstalleerd (gebruik bijvoorbeeld python -m pip 
 
 
 ---
-# gemeente_station_namen.py
+# Python script gemeente_station_namen.py
 De andere python scripts gebruiken als invoer een bestand met lijst van meetstation namen. In plaats van deze allemaal op te zoeken en over te typen, kun je dit script gebruiken als hulpmiddel.
 
 Voer het volgende commando uit voor hulp:
@@ -51,7 +60,9 @@ PARAMETER: gemeente_code
 UITVOER  : namen van stations
 ```
 
-Zoek in [GemeentenAlfabetisch2022.csv](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/GemeentenAlfabetisch2022.csv) de gemeentecode op en voer dan het volgende commando uit voor een overzicht van stationnamen bij een gemeente, bijvoorbeeld 797:
+Zoek in [GemeentenAlfabetisch2022.csv](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/GemeentenAlfabetisch2022.csv) de gemeentecode op en voer dan het volgende commando uit voor een overzicht van stationnamen bij een gemeente.
+
+## Voorbeeld van uitvoer voor gemeente Heusden (797)
 ```
 python gemeente_station_namen.py 797
 LTD_69527
@@ -103,7 +114,7 @@ Deze namen kun je in een bestand zetten, bijvoorbeeld _Heusden.txt, die je in de
 
 
 ---
-# station_data_naar_csv.py
+# Python script station_data_naar_csv.py
 Dit script update per meetstation uit het invoer bestand met meetstation namen een .csv bestand. De eerste keer zal deze alle data ophalen, de volgende keren zal deze nieuwe data toevoegen aan de .csv bestanden per meetstation.
 
 Voer het volgende commando uit voor hulp:
@@ -119,56 +130,54 @@ Opmerking: station namen van een gemeente kun je opvragen met:
            python gemeente_station_namen.py gemeente_code
 ```
 
-Voorbeeld van (gedeeltelijke uitvoer), gebruik makend van meetstation namen in _Heusden.txt:
+## Voorbeeld van (gedeeltelijke uitvoer), gebruik makend van meetstation namen in _Heusden.txt
 ```
 python station_data_naar_csv.py _Heusden.txt
 Ophalen station data voor GLB_1732427
-Laatste datum locale tijd: 2023-09-12 21:00 -> iso8601 utc: 2023-09-12T19:00:00.000Z
+Laatste datum locale tijd: 2024-01-27 11:00 -> iso8601 utc: 2024-01-27T10:00:00.000Z
 Uitvoer csv bestand: GLB_1732427.csv
+Ophalen data voor type: pm10_kal https://api-samenmeten.rivm.nl/v1.0/Datastreams(36530)/Observations
+Ophalen data voor type: pm10 https://api-samenmeten.rivm.nl/v1.0/Datastreams(36529)/Observations
+Ophalen data voor type: pm25_kal https://api-samenmeten.rivm.nl/v1.0/Datastreams(36528)/Observations
+Ophalen data voor type: pm25 https://api-samenmeten.rivm.nl/v1.0/Datastreams(36527)/Observations
+Geen nieuwe data gevonden sinds 2024-01-27T10:00:00.000Z
 
-Ophalen data voor type: pm10_kal
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(36530)/Observations
-
-Ophalen data voor type: pm10
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(36529)/Observations
-
-Ophalen data voor type: pm25_kal
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(36528)/Observations
-
-Ophalen data voor type: pm25
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(36527)/Observations
-
-Toevoegen 108 resultaten aan csv bestand
 Ophalen station data voor LTD_56607
-Laatste datum locale tijd: 2023-09-12 21:00 -> iso8601 utc: 2023-09-12T19:00:00.000Z
+Laatste datum locale tijd: 2024-07-11 14:00 -> iso8601 utc: 2024-07-11T12:00:00.000Z
 Uitvoer csv bestand: LTD_56607.csv
+Ophalen data voor type: rh https://api-samenmeten.rivm.nl/v1.0/Datastreams(32216)/Observations
+Ophalen data voor type: temp https://api-samenmeten.rivm.nl/v1.0/Datastreams(32215)/Observations
+Ophalen data voor type: pm10_kal https://api-samenmeten.rivm.nl/v1.0/Datastreams(32214)/Observations
+Ophalen data voor type: pm10 https://api-samenmeten.rivm.nl/v1.0/Datastreams(32213)/Observations
+Ophalen data voor type: pm25_kal https://api-samenmeten.rivm.nl/v1.0/Datastreams(32212)/Observations
+Ophalen data voor type: pm25 https://api-samenmeten.rivm.nl/v1.0/Datastreams(32211)/Observations
+Toevoegen 92 resultaten aan csv bestand
 
-Ophalen data voor type: rh
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(32216)/Observations
-
-Ophalen data voor type: temp
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(32215)/Observations
-
-Ophalen data voor type: pm10_kal
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(32214)/Observations
-
-Ophalen data voor type: pm10
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(32213)/Observations
-
-Ophalen data voor type: pm25_kal
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(32212)/Observations
-
-Ophalen data voor type: pm25
-@iot.nextLink=https://api-samenmeten.rivm.nl/v1.0/Datastreams(32211)/Observations
-
-Toevoegen 108 resultaten aan csv bestand
 Ophalen station data voor LTD_54329
-Laatste datum locale tijd: 2023-09-12 21:00 -> iso8601 utc: 2023-09-12T19:00:00.000Z
+Laatste datum locale tijd: 2024-07-11 14:00 -> iso8601 utc: 2024-07-11T12:00:00.000Z
 Uitvoer csv bestand: LTD_54329.csv
+Ophalen data voor type: rh https://api-samenmeten.rivm.nl/v1.0/Datastreams(30665)/Observations
+Ophalen data voor type: temp https://api-samenmeten.rivm.nl/v1.0/Datastreams(30664)/Observations
+Ophalen data voor type: pm10_kal https://api-samenmeten.rivm.nl/v1.0/Datastreams(30663)/Observations
+Ophalen data voor type: pm10 https://api-samenmeten.rivm.nl/v1.0/Datastreams(30662)/Observations
+Ophalen data voor type: pm25_kal https://api-samenmeten.rivm.nl/v1.0/Datastreams(30661)/Observations
+Ophalen data voor type: pm25 https://api-samenmeten.rivm.nl/v1.0/Datastreams(30660)/Observations
+Toevoegen 92 resultaten aan csv bestand
+
+Ophalen station data voor LTD_57197
+Laatste datum locale tijd: 2024-04-26 16:00 -> iso8601 utc: 2024-04-26T14:00:00.000Z
+Uitvoer csv bestand: LTD_57197.csv
+Ophalen data voor type: rh https://api-samenmeten.rivm.nl/v1.0/Datastreams(32584)/Observations
+Ophalen data voor type: temp https://api-samenmeten.rivm.nl/v1.0/Datastreams(32583)/Observations
+Ophalen data voor type: pm10_kal https://api-samenmeten.rivm.nl/v1.0/Datastreams(32582)/Observations
+Ophalen data voor type: pm10 https://api-samenmeten.rivm.nl/v1.0/Datastreams(32581)/Observations
+Ophalen data voor type: pm25_kal https://api-samenmeten.rivm.nl/v1.0/Datastreams(32580)/Observations
+Ophalen data voor type: pm25 https://api-samenmeten.rivm.nl/v1.0/Datastreams(32579)/Observations
+Geen nieuwe data gevonden sinds 2024-04-26T14:00:00.000Z
 .....
 ```
 
-Voorbeeld van (gedeeltelijke) inhoud van zo een csv bestand, bijvoorbeeld LTD_54329:
+## Voorbeeld van (gedeeltelijke) inhoud van zo een csv bestand, bijvoorbeeld LTD_54329
 ```
 datetime,pm10 kal,pm10,pm2.5 kal,pm2.5,rh%,temp
 2021-11-21 13:00,6.942,8.88,2.574,1.76,68.32,12.33
@@ -189,8 +198,8 @@ datetime,pm10 kal,pm10,pm2.5 kal,pm2.5,rh%,temp
 
 
 ---
-# samenvatting.py
-Dit script genereert een samenvatting per meetstation uit het invoer bestand met meetstation namen en gebruikt hiervoor de .csv bestanden die geupdate zijn uit het vorige script. Daarnaast wordt er ook een .kml bestand gemaakt, die je in [Google My Maps](https://mymaps.google.com) kunt importeren.
+# Python script samenvatting.py
+Dit script genereert een samenvatting per meetstation uit het invoer bestand met meetstation namen en gebruikt hiervoor de .csv bestanden die geupdate zijn uit het vorige script. Daarnaast wordt er ook een .kml bestand gemaakt, die je in [Google My Maps](https://mymaps.google.com) kunt importeren. Om een mooie spreadsheet grafiek te maken, wordt er ook een PM2.5.csv en PM10.csv bestand gegenereerd.
 
 Voer het volgende commando uit voor hulp:
 ```
@@ -218,7 +227,7 @@ Opm.6: Voordat dit script gedraaid wordt, moeten de .csv bestanden voor
             python station_data_naar_csv.py STATION_LIJST.txt
 ```
 
-Voorbeeld voor generenen samenvatting van _Heusden.txt:
+## Voorbeeld voor generenen samenvatting van _Heusden.txt
 ```
 python samenvatting.py _Heusden.txt
     Station,   Periode,      Datum,  Info, PM10, (Min,  Max, #WHO, #EU), PM2.5, (Min,  Max, #WHO), Commentaar
@@ -314,8 +323,7 @@ GLB_1732427, JAAR 259d, 2023-09-17,  2023,    9,    0,  107,    1,    1,     9, 
  Gemiddelde,      JAAR, 2023-03-13,  2023,   14,    0,  392,    7,    6,     7,    0,  161,    53, PM10 > WHO dag #4; PM2.5 > WHO jaar 5
 ```
 
-Het uitvoer kml bestand (de naam van je invoer bestand met extensie .kml, bijvoorbeeld _Heusden.txt.kml) kun je importeren in Google My Maps.
-
+## Voorbeelden van filteren opties
 Je kunt ook alleen een samenvatting genereren van een of meerdere volledige jaren, bijvoorbeeld 2021 en 2022:
 ```
 python samenvatting.py j2021-2022 _Heusden.txt
@@ -336,9 +344,129 @@ En je kunt de jaar-, maand- en uur-filters ook combineren.
 python samenvatting.py j2021-2022 u18-4 m11-3 _Heusden.txt
 ```
 
-Voorbeeld van de [resultaten van fijnstof over 2022 van gemeente Heusden kun je hier vinden op Google My Maps](https://www.google.com/maps/d/edit?mid=1nyoEbCk_SXPRRWx5NF0R1Hr0dcx_big&usp=sharing).
+## Gegggenereerd .kml bestand
+Het uitvoer kml bestand (de naam van je invoer bestand met extensie .kml, bijvoorbeeld _Heusden.txt.kml) kun je importeren in [Google My Maps](https://mymaps.google.com).
+
+## Voorbeeld van Google Maps op basis van .kml uitvoer
+Voorbeeld van de [resultaten van fijnstof over 2022 tot en met 2024 van gemeente Heusden kun je hier vinden op Google My Maps](https://www.google.com/maps/d/edit?mid=1nyoEbCk_SXPRRWx5NF0R1Hr0dcx_big&usp=sharing).
 
 ![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/examples/HeusdenFijnstof2022.png)
 
 Wanneer een meetstation boven de WHO waardes zit, dan wordt dit weergegeven als ![alt text](https://maps.google.com/mapfiles/kml/shapes/firedept.png) anders als ![alt text](https://maps.google.com/mapfiles/kml/shapes/parks.png) (of als er geen meetdata voor laatste jaar is).
 De gemiddeldes van alle meetstations uit de lijst wordt ergens in het midden van de coördinaten weergegeven, boven de WHO waardes als ![alt text](https://maps.google.com/mapfiles/kml/shapes/schools.png) anders als ![alt text](https://maps.google.com/mapfiles/kml/shapes/ranger_station.png)
+
+
+## Voorbeeld van gegenereerd PM2.5 .csv bestand: _GemeenteHeusden.txt.pm10.csv
+```
+Station,2021,2022,2023,2024
+GLB_1732427,,41.1,8.1,12.6
+LTD_41242,2.4
+LTD_41345,6.1,13.9,85.6
+LTD_42281,15.9
+LTD_51080,11.7,9.1,4.1
+LTD_54087,8.9,9.2,6.8,7.7
+LTD_54165,5.4,6.3,4.6,5.1
+LTD_54311,16.7,16.5,11.9,14.1
+LTD_54329,9.3,8.8,6.0,6.7
+LTD_54447,8.6,9.0,7.1,7.4
+LTD_54636,9.0,9.5,6.7,7.4
+LTD_54653,8.2,9.9,7.2,7.4
+LTD_55107,8.4,9.9,6.9,8.3
+LTD_55358,,10.0,7.8,8.4
+LTD_55458,4.1
+LTD_56098,,4.7
+LTD_56607,,11.6,8.2,10.0
+LTD_56928,,12.2,7.2,7.3
+LTD_57197,,9.2,6.6,6.1
+LTD_58098,,11.0,8.6,10.3
+LTD_58544,,10.5,8.8
+LTD_58547,,9.7,8.0
+LTD_63321,,10.1,8.2,9.2
+LTD_63545,,11.0,8.3,10.3
+LTD_64106,,7.9,6.0,7.1
+LTD_64160,,6.1,5.0,5.8
+LTD_64332,,8.8,6.7,7.3
+LTD_64345,,7.6,5.6,6.0
+LTD_64499,,9.7,7.0,8.1
+LTD_64544,,8.2,5.9,8.3
+LTD_64753,,10.1,6.3,7.1
+LTD_64764,,7.2,5.1,6.3
+LTD_65145,,10.7,6.1,6.8
+LTD_65341,,20.5
+LTD_65562,,10.3,5.0,5.6
+LTD_65769,,8.5
+LTD_65989,,11.8,7.6,8.6
+LTD_66012,,7.2,5.6,5.8
+LTD_66653,,,5.8,6.0
+LTD_66698,,,6.8,7.1
+LTD_67379,,,7.2,1.5
+LTD_68565,,,4.1,4.7
+LTD_69527,,,4.4,4.5
+LTD_73155,,,5.0,5.8
+LTD_73353,,,6.8,6.7
+LTD_73365,,,4.9,5.8
+LTD_75241,,,8.6,9.9
+LTD_78470,,,,6.6
+```
+
+Hiermee kun je een mooie grafiek maken met per station de jaren gegroepeerd. Bijvoorbeeld:
+
+![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/examples/_GemeenteHeusden.txt.pm25.png)
+
+
+## Voorbeeld van gegenereerd PM10 .csv bestand: _GemeenteHeusden.txt.pm10.csv
+```
+Station,2021,2022,2023,2024
+GLB_1732427,,41.4,8.4,18.6
+LTD_41242,5.5
+LTD_41345,11.3,21.8,101.5
+LTD_42281,26.0
+LTD_51080,15.3,14.7,6.2
+LTD_54087,12.4,13.5,12.3,11.4
+LTD_54165,6.6,8.9,8.0,7.5
+LTD_54311,16.3,19.2,16.6,16.0
+LTD_54329,12.2,15.4,14.1,12.5
+LTD_54447,10.8,13.7,12.9,11.2
+LTD_54636,11.5,14.0,12.2,10.9
+LTD_54653,9.6,12.6,11.0,9.7
+LTD_55107,8.2,11.9,9.7,9.5
+LTD_55358,,14.5,13.1,12.0
+LTD_55458,5.2
+LTD_56098,,6.4
+LTD_56607,,15.4,13.2,12.9
+LTD_56928,,18.5,12.6,10.8
+LTD_57197,,18.0,15.7,12.4
+LTD_58098,,18.5,17.4,16.6
+LTD_58544,,15.6,16.5
+LTD_58547,,15.5,13.3
+LTD_63321,,15.6,14.9,13.7
+LTD_63545,,19.7,17.9,17.9
+LTD_64106,,14.2,13.5,12.6
+LTD_64160,,10.7,10.8,10.5
+LTD_64332,,15.2,14.4,13.7
+LTD_64345,,13.7,12.3,11.4
+LTD_64499,,15.4,14.2,13.2
+LTD_64544,,13.3,12.6,12.7
+LTD_64753,,17.0,14.6,13.5
+LTD_64764,,12.8,11.2,11.9
+LTD_65145,,15.5,11.7,11.0
+LTD_65341,,30.1
+LTD_65562,,14.9,10.5,9.4
+LTD_65769,,17.9
+LTD_65989,,20.2,16.8,15.7
+LTD_66012,,13.2,12.3,11.1
+LTD_66653,,,10.6,9.3
+LTD_66698,,,15.9,14.2
+LTD_67379,,,12.4,4.8
+LTD_68565,,,6.9,6.4
+LTD_69527,,,7.7,7.5
+LTD_73155,,,8.2,8.9
+LTD_73353,,,11.2,11.4
+LTD_73365,,,8.2,9.4
+LTD_75241,,,12.4,14.7
+LTD_78470,,,,9.1
+```
+
+Hiermee kun je een mooie grafiek maken met per station de jaren gegroepeerd. Bijvoorbeeld:
+
+![alt text](https://raw.githubusercontent.com/ZuinigeRijder/samenmeten-rivm-tools/main/examples/_GemeenteHeusden.txt.pm10.png)
