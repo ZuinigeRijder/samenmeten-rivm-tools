@@ -2,6 +2,7 @@
 """
 Python3 script om een samenvatting te maken van de station namen in een bestand.
 """
+# pylint:disable=too-many-lines
 from copy import deepcopy
 from io import TextIOWrapper
 import json
@@ -50,7 +51,8 @@ class Totals:
 
     name: str = None
     current_day: datetime = None
-    elapsed_hours: int = 1
+    elapsed_hours_pm10: int = 1
+    elapsed_hours_pm25: int = 1
     pm10_kal_avg: float = None
     pm10_kal_min: float = None
     pm10_kal_max: float = None
@@ -200,7 +202,7 @@ if len(sys.argv) < 2 or KEYWORD_ERROR or arg_has("help"):
     print(
         """
 Gebruik  : python samenvatting.py STATION_LIJST.txt
-Voorbeeld: python samenvatting.py _heusden.txt
+Voorbeeld: python samenvatting.py _GemeenteHeusden.txt
 Opties   : [uur] [dag] [week] [maand] [j2000-3000] [m1-12] [u0-23]
 
 Opm.1: Wilt u meer details zien, gebruik parameter uur/dag/week/maand
@@ -228,9 +230,16 @@ def init(current_day: datetime, split: list[str]) -> Totals:
     _ = D and dbg(f"init({current_day})")
     pm10_kal = get_kal_float(PM10_KAL, split)
     pm25_kal = get_kal_float(PM25_KAL, split)
+    # if one calibrated value is not filled, just overrule with the max WHO value.
+    # this is the best workaround I can do for now, to use one of both calibrated values
+    if pm10_kal < 0.0:
+        pm10_kal = 10.0
+    if pm25_kal < 0.0:
+        pm25_kal = 5.0
     totals = Totals(
         "unknown",
         current_day,
+        1,
         1,
         pm10_kal,
         pm10_kal,
@@ -325,9 +334,10 @@ def kml_write_name(year: Totals, name: str, home: bool = False) -> None:
     if not year:
         kml_writeln(f"<name>{name}</name><styleUrl>#homeOkStyle</styleUrl>")
         return  # nothing further to do, no data UNTIL_YEAR
-    elapsed_hours = max(year.elapsed_hours, 1)
-    pm10_kal_avg = year.pm10_kal_avg / elapsed_hours
-    pm25_kal_avg = year.pm25_kal_avg / elapsed_hours
+    elapsed_hours_pm10 = max(year.elapsed_hours_pm10, 1)
+    elapsed_hours_pm25 = max(year.elapsed_hours_pm25, 1)
+    pm10_kal_avg = year.pm10_kal_avg / elapsed_hours_pm10
+    pm25_kal_avg = year.pm25_kal_avg / elapsed_hours_pm25
     who_exceeded_pm10 = (
         year.pm10_kal_avg > WHO_PM10_ANNUAL_AVG
         or year.who_pm10_daily > WHO_PM10_DAILY_LIMIT
@@ -336,9 +346,10 @@ def kml_write_name(year: Totals, name: str, home: bool = False) -> None:
         pm25_kal_avg > WHO_PM25_ANNUAL_AVG or year.who_pm25_daily > WHO_PM25_DAILY_LIMIT
     )
     who_exceeded = who_exceeded_pm10 or who_exceeded_pm25
-    number_of_days = int(year.elapsed_hours / 24)
+    number_of_days_pm10 = int(year.elapsed_hours_pm10 / 24)
+    number_of_days_pm25 = int(year.elapsed_hours_pm25 / 24)
     kml_writeln(
-        f"<name>{pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d)</name>"  # noqa
+        f"<name>{pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days_pm10}d/{number_of_days_pm25}d)</name>"  # noqa
     )  # noqa
     if home:
         if who_exceeded:
@@ -353,7 +364,7 @@ def kml_write_name(year: Totals, name: str, home: bool = False) -> None:
     kml_writeln(f"<styleUrl>#{style}</styleUrl>")
 
 
-COLUMN_WIDTHS = [11, 12, 10, 7, 5, 4, 4, 3, 3, 5, 4, 4, 3, 3, 1]
+COLUMN_WIDTHS = [11, 19, 10, 7, 5, 4, 4, 3, 3, 5, 4, 4, 3, 3, 1]
 
 
 def format_output(output: str) -> str:
@@ -476,7 +487,7 @@ def get_next_csv_line() -> str:
                 if not skip:
                     skip = (
                         get_kal_float(PM10_KAL, READAHEAD.curr_split) < 0.0
-                        or get_kal_float(PM25_KAL, READAHEAD.curr_split) < 0.0
+                        and get_kal_float(PM25_KAL, READAHEAD.curr_split) < 0.0
                     )
 
                 if not skip:
@@ -556,7 +567,8 @@ def update_average_totals(key_str: str, values: Totals):
     if key_str in AVERAGE_GRAND_TOTALS:
         totals = AVERAGE_GRAND_TOTALS[key_str]
         totals.current_day = min(totals.current_day, values.current_day)
-        totals.elapsed_hours += values.elapsed_hours
+        totals.elapsed_hours_pm10 += values.elapsed_hours_pm10
+        totals.elapsed_hours_pm25 += values.elapsed_hours_pm25
         totals.pm10_kal_avg += values.pm10_kal_avg
         totals.pm10_kal_min = min(totals.pm10_kal_min, values.pm10_kal_min)
         totals.pm10_kal_max = max(totals.pm10_kal_max, values.pm10_kal_max)
@@ -582,9 +594,10 @@ def print_summary(prefix: str, values: Totals) -> None:
         dbg("PREV  : " + str(values))
         dbg("VALUES: " + str(values))
 
-    t_elapsed_hours = max(values.elapsed_hours, 1)
-    t_pm10_kal_avg = values.pm10_kal_avg / t_elapsed_hours
-    t_pm25_kal_avg = values.pm25_kal_avg / t_elapsed_hours
+    t_elapsed_hours_pm10 = max(values.elapsed_hours_pm10, 1)
+    t_elapsed_hours_pm25 = max(values.elapsed_hours_pm25, 1)
+    t_pm10_kal_avg = values.pm10_kal_avg / t_elapsed_hours_pm10
+    t_pm25_kal_avg = values.pm25_kal_avg / t_elapsed_hours_pm25
 
     if prefix.startswith("DAG "):
         if t_pm10_kal_avg > WHO_PM10_DAILY_LIMIT:
@@ -608,13 +621,15 @@ def print_summary(prefix: str, values: Totals) -> None:
     output = f"{STATION_NAME},{prefix}, {t_pm10_kal_avg:.1f}, {values.pm10_kal_min:.0f}, {values.pm10_kal_max:.0f}, {values.who_pm10_daily}, {values.eu_pm10_daily}, {t_pm25_kal_avg:.1f}, {values.pm25_kal_min:.0f}, {values.pm25_kal_max:.0f}, {values.who_pm25_daily},"  # noqa
 
     if prefix.startswith("JAAR"):
-        elapsed_hours = max(GRAND_TOTALS.year.elapsed_hours, 1)
-        pm10_kal_avg = GRAND_TOTALS.year.pm10_kal_avg / elapsed_hours
-        pm25_kal_avg = GRAND_TOTALS.year.pm25_kal_avg / elapsed_hours
-        number_of_days = int(GRAND_TOTALS.year.elapsed_hours / 24)
+        elapsed_hours_pm10 = max(GRAND_TOTALS.year.elapsed_hours_pm10, 1)
+        elapsed_hours_pm25 = max(GRAND_TOTALS.year.elapsed_hours_pm25, 1)
+        pm10_kal_avg = GRAND_TOTALS.year.pm10_kal_avg / elapsed_hours_pm10
+        pm25_kal_avg = GRAND_TOTALS.year.pm25_kal_avg / elapsed_hours_pm25
+        number_of_days_pm10 = int(GRAND_TOTALS.year.elapsed_hours_pm10 / 24)
+        number_of_days_pm25 = int(GRAND_TOTALS.year.elapsed_hours_pm25 / 24)
         year = f'{GRAND_TOTALS.year.current_day.strftime("%Y"):4s}'
         kml_writeln(
-            f"{year}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d) #{GRAND_TOTALS.year.who_pm10_daily}/{GRAND_TOTALS.year.who_pm25_daily}"  # noqa
+            f"{year}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days_pm10}d/{number_of_days_pm25}d) #{GRAND_TOTALS.year.who_pm10_daily}/{GRAND_TOTALS.year.who_pm25_daily}"  # noqa
         )
         comment = get_comment(True, pm10_kal_avg, pm25_kal_avg, GRAND_TOTALS.year)
         output += comment
@@ -628,12 +643,14 @@ def print_summary(prefix: str, values: Totals) -> None:
         YEARS_DICT[year] = True
 
     elif prefix.startswith("ALLES"):
-        elapsed_hours = max(values.elapsed_hours, 1)
-        pm10_kal_avg = values.pm10_kal_avg / elapsed_hours
-        pm25_kal_avg = values.pm25_kal_avg / elapsed_hours
-        number_of_days = int(values.elapsed_hours / 24)
+        elapsed_hours_pm10 = max(values.elapsed_hours_pm10, 1)
+        elapsed_hours_pm25 = max(values.elapsed_hours_pm25, 1)
+        pm10_kal_avg = values.pm10_kal_avg / elapsed_hours_pm10
+        pm25_kal_avg = values.pm25_kal_avg / elapsed_hours_pm25
+        number_of_days_pm10 = int(values.elapsed_hours_pm10 / 24)
+        number_of_days_pm25 = int(values.elapsed_hours_pm25 / 24)
         kml_writeln(
-            f"Gem.   {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d) #{values.who_pm10_daily}/{values.who_pm25_daily}"  # noqa
+            f"Gem.   {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days_pm10}d/{number_of_days_pm25}d) #{values.who_pm10_daily}/{values.who_pm25_daily}"  # noqa
         )
         comment = get_comment(True, pm10_kal_avg, pm25_kal_avg, values)
         output += comment
@@ -682,10 +699,12 @@ def print_summaries(current_day_values: Totals, last: bool) -> None:
 
     if not same_year(current_day, GRAND_TOTALS.year.current_day) or last:
         year = GRAND_TOTALS.year.current_day.strftime("%Y")
-        number_of_days = int(GRAND_TOTALS.year.elapsed_hours / 24)
+        number_of_days_pm10 = int(GRAND_TOTALS.year.elapsed_hours_pm10 / 24)
+        number_of_days_pm25 = int(GRAND_TOTALS.year.elapsed_hours_pm25 / 24)
         if YEAR:
             print_summary(
-                f"JAAR {number_of_days:5d}d, {day_str}, {year}", GRAND_TOTALS.year
+                f"JAAR {number_of_days_pm10:5d}d/{number_of_days_pm25:5d}d, {day_str}, {year}",  # noqa
+                GRAND_TOTALS.year,
             )
             _ = D and dbg(f"year {year}")
             update_average_totals(f"{year:>4}", GRAND_TOTALS.year)  # 4
@@ -693,12 +712,21 @@ def print_summaries(current_day_values: Totals, last: bool) -> None:
             update_average_totals("Station", GRAND_TOTALS.year)  # 7
 
         if DAY:
-            print_summary(f"DAGGEM  , {day_str}, {number_of_days}d ", GRAND_TOTALS.year)
+            print_summary(
+                f"DAGGEM  , {day_str}, {number_of_days_pm10}d/{number_of_days_pm25}d ",
+                GRAND_TOTALS.year,
+            )
         if WEEK:
-            print_summary(f"WEEKGEM , {day_str}, {number_of_days}d ", GRAND_TOTALS.year)
+            print_summary(
+                f"WEEKGEM , {day_str}, {number_of_days_pm10}d/{number_of_days_pm25}d ",
+                GRAND_TOTALS.year,
+            )
 
         if MONTH:
-            print_summary(f"MAANDGEM, {day_str}, {number_of_days}d ", GRAND_TOTALS.year)
+            print_summary(
+                f"MAANDGEM, {day_str}, {number_of_days_pm10}d/{number_of_days_pm25}d ",
+                GRAND_TOTALS.year,
+            )
 
         if not last:
             GRAND_TOTALS.year = deepcopy_totals("year", current_day_values)
@@ -706,13 +734,16 @@ def print_summaries(current_day_values: Totals, last: bool) -> None:
 
 def update_totals(totals: Totals, pm10_kal: float, pm25_kal: float) -> None:
     """update_totals"""
-    totals.elapsed_hours += 1
-    totals.pm10_kal_avg += pm10_kal
-    totals.pm25_kal_avg += pm25_kal
-    totals.pm10_kal_min = min(pm10_kal, totals.pm10_kal_min)
-    totals.pm10_kal_max = max(pm10_kal, totals.pm10_kal_max)
-    totals.pm25_kal_min = min(pm25_kal, totals.pm25_kal_min)
-    totals.pm25_kal_max = max(pm25_kal, totals.pm25_kal_max)
+    if pm10_kal >= 0.0:
+        totals.elapsed_hours_pm10 += 1
+        totals.pm10_kal_avg += pm10_kal
+        totals.pm10_kal_min = min(pm10_kal, totals.pm10_kal_min)
+        totals.pm10_kal_max = max(pm10_kal, totals.pm10_kal_max)
+    if pm25_kal >= 0.0:
+        totals.elapsed_hours_pm25 += 1
+        totals.pm25_kal_avg += pm25_kal
+        totals.pm25_kal_min = min(pm25_kal, totals.pm25_kal_min)
+        totals.pm25_kal_max = max(pm25_kal, totals.pm25_kal_max)
 
 
 def keep_track_of_totals(split: list[str]) -> None:
@@ -735,7 +766,7 @@ def keep_track_of_totals(split: list[str]) -> None:
     if D:
         current_day = parser.parse(split[DT])
         print(
-            f"{int(GRAND_TOTALS.year.elapsed_hours/24)} {current_day} year.elapsed_hours: {GRAND_TOTALS.year.elapsed_hours}"  # noqa
+            f"{int(GRAND_TOTALS.year.elapsed_hours_pm10/24)}/{int(GRAND_TOTALS.year.elapsed_hours_pm25/24)} {current_day} year.elapsed_hours: {GRAND_TOTALS.year.elapsed_hours_pm10}/{GRAND_TOTALS.year.elapsed_hours_pm25}"  # noqa
         )
     _ = D and dbg("     after: " + str(GRAND_TOTALS))
 
@@ -900,9 +931,10 @@ def handle_station_list(station_name_list: str) -> None:
 
                 if STATION_NAME_KML_PRINTED:  # only write kml if something written
                     all_years = AVERAGE_GRAND_TOTALS["Station"]
-                    number_of_days = int(all_years.elapsed_hours / 24)
+                    number_of_days_pm10 = int(all_years.elapsed_hours_pm10 / 24)
+                    number_of_days_pm25 = int(all_years.elapsed_hours_pm25 / 24)
                     print_summary(
-                        f"ALLES {number_of_days:5d}d,, alles",
+                        f"ALLES {number_of_days_pm10:5d}d/{number_of_days_pm25:5d}d,, alles",  # noqa
                         all_years,
                     )
                     del AVERAGE_GRAND_TOTALS["Station"]
@@ -926,10 +958,12 @@ def handle_station_list(station_name_list: str) -> None:
         (KML.max_lon + KML.min_lon) / 2,
     )
     for key, totals in sorted_yearly.items():
-        elapsed_hours = max(totals.elapsed_hours, 1)
-        pm10_kal_avg = totals.pm10_kal_avg / elapsed_hours
-        pm25_kal_avg = totals.pm25_kal_avg / elapsed_hours
-        number_of_days = int(totals.elapsed_hours / 24)
+        elapsed_hours_pm10 = max(totals.elapsed_hours_pm10, 1)
+        elapsed_hours_pm25 = max(totals.elapsed_hours_pm25, 1)
+        pm10_kal_avg = totals.pm10_kal_avg / elapsed_hours_pm10
+        pm25_kal_avg = totals.pm25_kal_avg / elapsed_hours_pm25
+        number_of_days_pm10 = int(totals.elapsed_hours_pm10 / 24)
+        number_of_days_pm25 = int(totals.elapsed_hours_pm25 / 24)
         if len(key) == 4:
             period = "JAAR"
         elif len(key) == 5:
@@ -947,15 +981,16 @@ def handle_station_list(station_name_list: str) -> None:
         else:
             period = "???"
         key = key.strip()
-        period = f"{period} {number_of_days:5d}d"
+        period = f"{period} {number_of_days_pm10:5d}d/{number_of_days_pm25:5d}d"
         output = f"Gemiddelde,{period},,{key},{pm10_kal_avg:.1f}, {totals.pm10_kal_min:.0f}, {totals.pm10_kal_max:.0f}, {totals.who_pm10_daily}, {totals.eu_pm10_daily}, {pm25_kal_avg:.1f}, {totals.pm25_kal_min:.0f}, {totals.pm25_kal_max:.0f}, {totals.who_pm25_daily},"  # noqa
         comment = get_comment(True, pm10_kal_avg, pm25_kal_avg, totals)
         output += comment
         print_output_formatted(output)
-        number_of_days = int(totals.elapsed_hours / 24)
+        number_of_days_pm10 = int(totals.elapsed_hours_pm10 / 24)
+        number_of_days_pm25 = int(totals.elapsed_hours_pm25 / 24)
         if len(key) == 4:
             kml_writeln(
-                f'{totals.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days}d) #{totals.who_pm10_daily}/{totals.who_pm25_daily}'  # noqa
+                f'{totals.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days_pm10}d/{number_of_days_pm25}d) #{totals.who_pm10_daily}/{totals.who_pm25_daily}'  # noqa
             )
             if comment != "":
                 comment = comment.replace("; ", "\n     ")

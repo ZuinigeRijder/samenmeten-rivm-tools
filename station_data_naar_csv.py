@@ -35,7 +35,7 @@ if len(sys.argv) < 2:
     print(
         """
 Gebruik  : python station_data_naar_csv.py bestand_met_station_namen.txt [debug]
-Voorbeeld: python station_data_naar_csv.py _heusden.txt
+Voorbeeld: python station_data_naar_csv.py _GemeenteHeusden.txt
 INVOER   : bestand_met_station_namen.txt
 UITVOER  : voor iedere station in bestand_met_station_namen.txt schrijf .csv bestand
 
