@@ -43,6 +43,8 @@ class Readahead:
     line: str = ""
     read_done_once: bool = False
     linecount: int = 0
+    pm25_kalibration_factor: float = None
+    pm10_kalibration_factor: float = None
 
 
 @dataclass
@@ -404,6 +406,41 @@ def print_header() -> None:
     print(output)
 
 
+def fill_pm_kal(pm_index, pm_kal_index):
+    """fill_pm_kal"""
+    pm_kal = get_kal_float(pm_kal_index, READAHEAD.curr_split)
+    pm10_measurement = pm_kal_index == PM10_KAL
+    pm_id = "PM2.5"
+    if pm10_measurement:
+        pm_id = "PM10"
+    pm = get_kal_float(pm_index, READAHEAD.curr_split)
+    if pm_kal > 0.0 and pm > 0.0:
+        kalibration_factor = pm_kal / pm
+        if pm10_measurement:
+            READAHEAD.pm10_kalibration_factor = kalibration_factor
+        else:
+            READAHEAD.pm25_kalibration_factor = kalibration_factor
+        if D:
+            print(
+                f"{READAHEAD.curr_split[DT]} New kalibration factor {pm_id} pm_kal: {pm_kal:.2f}, pm: {pm:.2f}, kalibration_factor: {kalibration_factor:.2f}"  # noqa
+            )
+    elif pm > 0.0:
+        # interpolate
+        if pm10_measurement:
+            kalibration_factor = READAHEAD.pm10_kalibration_factor
+        else:
+            kalibration_factor = READAHEAD.pm25_kalibration_factor
+        if kalibration_factor:
+            pm_kal = pm * kalibration_factor
+            if D:
+                print(
+                    f"{READAHEAD.curr_split[DT]} Interpolation {pm_id} pm_kal: {pm_kal:.2f}, pm: {pm:.2f}, kalibration_factor: {kalibration_factor:.2f}"  # noqa
+                )
+
+    if pm_kal > 0.0:
+        READAHEAD.curr_split[pm_kal_index] = f"{pm_kal:.2f}"
+
+
 def get_next_csv_line() -> str:
     """
     get_next_csv_line
@@ -485,10 +522,11 @@ def get_next_csv_line() -> str:
                         )
 
                 if not skip:
-                    skip = (
-                        get_kal_float(PM10_KAL, READAHEAD.curr_split) < 0.0
-                        and get_kal_float(PM25_KAL, READAHEAD.curr_split) < 0.0
-                    )
+                    fill_pm_kal(PM10, PM10_KAL)
+                    fill_pm_kal(PM25, PM25_KAL)
+                    pm10_kal = get_kal_float(PM10_KAL, READAHEAD.curr_split)
+                    pm25_kal = get_kal_float(PM25_KAL, READAHEAD.curr_split)
+                    skip = pm10_kal < 0.0 and pm25_kal < 0.0
 
                 if not skip:
                     _ = D and dbg(f"next=[{line}]")
@@ -907,7 +945,7 @@ def write_pm25_pm10_csv_files():
 
 def handle_station_list(station_name_list: str) -> None:
     """handle_station_list"""
-    global STATION_NAME, STATION_NAME_KML_PRINTED, READAHEAD  # noqa pylint:disable=global-statement
+    global STATION_NAME, STATION_NAME_KML_PRINTED  # noqa pylint:disable=global-statement
     input_file = Path(station_name_list)
     if not input_file.is_file():
         raise ValueError(f"{station_name_list} invoer bestand bestaat niet")
@@ -924,7 +962,11 @@ def handle_station_list(station_name_list: str) -> None:
                     raise ValueError(f"FOUT: bestand bestaat niet: {input_csv_file}")
                 _ = D and dbg(f"Samenvatting genereren uit {input_csv_file}")
 
-                READAHEAD = Readahead([], [])
+                READAHEAD.pm25_kalibration_factor = None
+                READAHEAD.pm10_kalibration_factor = None
+                READAHEAD.file_eol = False
+                READAHEAD.read_done_once = False
+                READAHEAD.linecount = 0
                 READAHEAD.file = input_csv_file.open("r", encoding="utf-8")
 
                 summary()  # do the work
