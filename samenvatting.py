@@ -204,6 +204,11 @@ if len(sys.argv) < 2 or KEYWORD_ERROR or arg_has("help"):
     print(
         """
 Gebruik  : python samenvatting.py STATION_LIJST.txt
+Uitvoer  : STATION_LIST.txt.kml          (bestand in Google My Maps formaat)
+           STATION_LIST.txt.pm25.csv     (PM2.5 per jaar per station in csv formaat)
+           STATION_LIST.txt.pm10.csv     (PM10  per jaar per station in csv formaat)
+           STATION_LIST.txt.pm25.avg.csv (gemiddelde PM2.5 per jaar per station)
+           STATION_LIST.txt.pm10.avg.csv (gemiddelde PM10  per jaar per station)
 Voorbeeld: python samenvatting.py _GemeenteHeusden.txt
 Opties   : [uur] [dag] [week] [maand] [j2000-3000] [m1-12] [u0-23]
 
@@ -676,8 +681,12 @@ def print_summary(prefix: str, values: Totals) -> None:
             kml_writeln(f"{comment}\n")
 
         # keep track of station/years/PM2.5/PM10
-        PM25_DICT[f"{STATION_NAME},{year}"] = f"{pm25_kal_avg:.1f}"
-        PM10_DICT[f"{STATION_NAME},{year}"] = f"{pm10_kal_avg:.1f}"
+        PM25_DICT[f"{STATION_NAME},{year}"] = (
+            f"{GRAND_TOTALS.year.pm25_kal_avg:.1f},{elapsed_hours_pm25}"
+        )
+        PM10_DICT[f"{STATION_NAME},{year}"] = (
+            f"{GRAND_TOTALS.year.pm10_kal_avg:.1f},{elapsed_hours_pm10}"
+        )
         YEARS_DICT[year] = True
 
     elif prefix.startswith("ALLES"):
@@ -906,23 +915,74 @@ def summary() -> None:
 
 
 def write_pm_csv_file(
-    pm_file: TextIOWrapper, years: list[str], pm_dict: dict[str, str]
+    pm_avg_file: TextIOWrapper,
+    pm_file: TextIOWrapper,
+    years: list[str],
+    pm_dict: dict[str, str],
 ):
     """write_pm_csv_file"""
     year_index = 0
     current_station = ""
+    pm_avg_kal_dict: dict[str] = {}
+    pm_avg_elapsed_dict: dict[str] = {}
+
+    total_kal = 0.0
+    total_elapsed = 0
     for pm_key in sorted(pm_dict):
         (station, year) = pm_key.split(",")
         if current_station != station:
+            if current_station != "":
+                total_kal_avg = total_kal / total_elapsed
+                pm_file.write(f",{total_kal_avg:.1f}")
+                total_kal = 0.0
+                total_elapsed = 0
             pm_file.write(f"\n{station}")
             current_station = station
             year_index = 0
         while year_index < len(years) and years[year_index] != year:
             pm_file.write(",")
             year_index += 1
-        pm_file.write(f",{pm_dict[pm_key]}")
+        entry = pm_dict[pm_key]
+        (kal, elapsed_hours) = entry.split(",")
+        kal_float = float(kal)
+        elapsed_hours_int = int(elapsed_hours)
+        total_kal += kal_float
+        total_elapsed += elapsed_hours_int
+
+        # keep track of grand totals
+        if year in pm_avg_kal_dict:
+            pm_avg_kal_dict[year] += kal_float
+            pm_avg_elapsed_dict[year] += elapsed_hours_int
+        else:
+            pm_avg_kal_dict[year] = kal_float
+            pm_avg_elapsed_dict[year] = elapsed_hours_int
+
+        kal_avg = kal_float / elapsed_hours_int
+        pm_file.write(f",{kal_avg:.1f}")
         year_index += 1
-    pm_file.write("\n")
+
+    # write average of last station
+    if current_station != "":
+        total_kal_avg = total_kal / total_elapsed
+        pm_file.write(f",{total_kal_avg:.1f}")
+
+    # write average of grand totals
+    year_index = 0
+    total_kal = 0.0
+    total_elapsed = 0
+    for year in sorted(pm_avg_kal_dict.keys()):
+        while year_index < len(years) and years[year_index] != year:
+            pm_avg_file.write(",")
+            year_index += 1
+        kal_float = pm_avg_kal_dict[year]
+        elapsed_hours_int = pm_avg_elapsed_dict[year]
+        total_kal += kal_float
+        total_elapsed += elapsed_hours_int
+        kal_avg = kal_float / elapsed_hours_int
+        pm_avg_file.write(f",{kal_avg:.1f}")
+        year_index += 1
+    total_kal_avg = total_kal / total_elapsed
+    pm_avg_file.write(f",{total_kal_avg:.1f}\n")
 
 
 def write_pm25_pm10_csv_files():
@@ -933,14 +993,31 @@ def write_pm25_pm10_csv_files():
     for year in years:
         header += ","
         header += year
+    header += ",Gemiddeld"
 
-    with Path(f"{STATION_NAME_LIST}.pm25.csv").open("w", encoding="utf-8") as pm25_file:
-        pm25_file.write(f"{header}")
-        write_pm_csv_file(pm25_file, years, PM25_DICT)
+    shrinked_name = STATION_NAME_LIST
+    shrinked_name = shrinked_name.replace("_", "")  # get rid of underscores
+    shrinked_name = shrinked_name.replace(".txt", "")  # get rid of .txt
 
-    with Path(f"{STATION_NAME_LIST}.pm10.csv").open("w", encoding="utf-8") as pm10_file:
-        pm10_file.write(f"{header}")
-        write_pm_csv_file(pm10_file, years, PM10_DICT)
+    with Path(f"{STATION_NAME_LIST}.pm25.avg.csv").open(
+        "w", encoding="utf-8"
+    ) as pm25_avg_file:
+        with Path(f"{STATION_NAME_LIST}.pm10.avg.csv").open(
+            "w", encoding="utf-8"
+        ) as pm10_avg_file:
+            with Path(f"{STATION_NAME_LIST}.pm25.csv").open(
+                "w", encoding="utf-8"
+            ) as pm25_file:
+                pm25_avg_file.write(f"{header}\n{shrinked_name}")
+                pm25_file.write(f"{header}")
+                write_pm_csv_file(pm25_avg_file, pm25_file, years, PM25_DICT)
+
+            with Path(f"{STATION_NAME_LIST}.pm10.csv").open(
+                "w", encoding="utf-8"
+            ) as pm10_file:
+                pm10_avg_file.write(f"{header}\n{shrinked_name}")
+                pm10_file.write(f"{header}")
+                write_pm_csv_file(pm10_avg_file, pm10_file, years, PM10_DICT)
 
 
 def handle_station_list(station_name_list: str) -> None:
