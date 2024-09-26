@@ -129,6 +129,8 @@ PM25_KAL = 3
 PM25 = 4
 RH = 5
 TEMP = 6
+PM10_KAL_FACTOR = 7
+PM25_KAL_FACTOR = 8
 
 # globals
 KML = KmlData()
@@ -551,14 +553,14 @@ def get_corrected_next_csv_line() -> str:
             return ""  # finished
 
         split = READAHEAD.curr_split
-        if len(split) != 7:
+        if len(split) < 7:
             _ = D and dbg(f"#### Skipping line {READAHEAD.linecount}: [{line}]")
             continue
 
         _ = D and dbg(str(READAHEAD.linecount) + ": LINE=[" + line + "]")
         next_line = READAHEAD.line.strip()
         next_split = READAHEAD.next_split
-        if len(next_split) != 7:
+        if len(next_split) < 7:
             _ = D and dbg(f"Next split skip: {READAHEAD.linecount}: [{next_line}]")
             return line
 
