@@ -78,7 +78,13 @@ def get_keylist(dictionary: dict) -> list:
     return []
 
 
-def get_observations_data(streams_data: dict, till: str, file: TextIOWrapper) -> None:
+def get_observations_data(
+    streams_data: dict,
+    till: str,
+    file: TextIOWrapper,
+    last_pm_10_kal_factor: float,
+    last_pm_25_kal_factor: float,
+) -> None:
     """get_observations_data"""
     match = ["pm10", "pm10_kal", "pm25", "pm25_kal", "rh", "temp"]
     result_dict = {}
@@ -124,11 +130,36 @@ def get_observations_data(streams_data: dict, till: str, file: TextIOWrapper) ->
         datetime_str_local = datetime_to_datetime_str(
             utc_to_local(iso8601_to_datetime(key))
         )
-        data_to_write = f"{datetime_str_local},{get(pm10_kal, key)},{get(pm10, key)},{get(pm25_kal, key)},{get(pm25, key)},{get(luchtvochtigheid, key)},{get(temp, key)}\n"  # noqa
+        pm10_kal_value = get(pm10_kal, key)
+        pm10_value = get(pm10, key)
+        pm_10_kal_factor = last_pm_10_kal_factor
+        if (
+            pm10_kal_value is not None
+            and pm10_kal_value > 0.0
+            and pm10_value is not None
+            and pm10_value > 0.0
+        ):
+            pm_10_kal_factor = pm10_kal_value / pm10_value
+
+        pm25_kal_value = get(pm25_kal, key)
+        pm25_value = get(pm25, key)
+        pm_25_kal_factor = last_pm_25_kal_factor
+        if (
+            pm25_kal_value is not None
+            and pm25_kal_value > 0.0
+            and pm25_value is not None
+            and pm25_value > 0.0
+        ):
+            pm_25_kal_factor = pm25_kal_value / pm25_value
+
+        data_to_write = f"{datetime_str_local},{pm10_kal_value},{pm10_value},{pm25_kal_value},{pm25_value},{get(luchtvochtigheid, key)},{get(temp, key)},{pm_10_kal_factor:.3f},{pm_25_kal_factor:.3f}\n"  # noqa
         data_to_write = data_to_write.replace("None", "")  # None values handle as empty
         if D:
             print(data_to_write, end="")
         file.write(data_to_write)
+
+        last_pm_10_kal_factor = pm_10_kal_factor
+        last_pm_25_kal_factor = pm_25_kal_factor
 
 
 def get_station_data(input_station_name: str) -> None:
@@ -149,12 +180,18 @@ def get_station_data(input_station_name: str) -> None:
         output_station_csv_file.touch()
         print(f"Schrijven van koptekst naar nieuwe csv file {output_station_csv_file}")
         with output_station_csv_file.open("a", encoding="utf-8") as file:
-            file.write("datetime,pm10 kal,pm10,pm2.5 kal,pm2.5,rh%,temp\n")
+            file.write(
+                "datetime,pm10 kal,pm10,pm2.5 kal,pm2.5,rh%,temp,pm10 kal factor,pm2.5 kal factor\n"  # noqa
+            )
 
-    till = get_last_date_entry(output_station_csv_file, "2000-01-01 00:00")
+    (till, last_pm_10_kal_factor, last_pm_25_kal_factor) = get_last_date_entry(
+        output_station_csv_file, "2000-01-01 00:00"
+    )
     print(f"Uitvoer csv bestand: {output_station_csv_file}")
     with output_station_csv_file.open("a", encoding="utf-8") as file:
-        get_observations_data(streams_data_value, till, file)
+        get_observations_data(
+            streams_data_value, till, file, last_pm_10_kal_factor, last_pm_25_kal_factor
+        )
 
 
 def handle_station_list(station_name_list: str) -> None:

@@ -169,10 +169,16 @@ def get_last_line(file_path: Path) -> str:
 def get_last_date_entry(csv_file: Path, start_yyyymmddhh: str):
     """get last date entry"""
     last_line = get_last_line(csv_file)
+    last_yyyymmddhh = start_yyyymmddhh
+    last_pm_10_kal_factor = 1.0
+    last_pm_25_kal_factor = 1.0
     if last_line.startswith("20"):  # year starts with 20
-        last_yyyymmddhh = last_line.split(",")[0]
-    else:
-        last_yyyymmddhh = start_yyyymmddhh
+        splitted = last_line.split(",")
+        last_yyyymmddhh = splitted[0]
+        if len(splitted) > 8:
+            last_pm_10_kal_factor = float(splitted[7].strip())
+            last_pm_25_kal_factor = float(splitted[8].strip())
+
     # convert local time to utc time iso8601
     iso8601_utc_string = datetime_to_iso8601_str(
         local_to_utc(datetime_str_to_datetime(last_yyyymmddhh))
@@ -180,7 +186,7 @@ def get_last_date_entry(csv_file: Path, start_yyyymmddhh: str):
     print(
         f"Laatste datum locale tijd: {last_yyyymmddhh} -> iso8601 utc: {iso8601_utc_string}"  # noqa
     )
-    return iso8601_utc_string
+    return iso8601_utc_string, last_pm_10_kal_factor, last_pm_25_kal_factor
 
 
 def sleep(retries: int) -> int:
