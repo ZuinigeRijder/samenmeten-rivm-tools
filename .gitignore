@@ -1,3 +1,10 @@
+examples/2023/
+examples/*.kmz
+examples/_alles.bat
+examples/x.*
+madavi-tools/data/
+madavi-tools/_csv2samenmeten.bat
+
 *.csv
 *.pdf
 *.xlsx
