@@ -2,8 +2,9 @@ examples/2023/
 examples/*.kmz
 examples/_alles.bat
 examples/x.*
-madavi-tools/data/
-madavi-tools/_csv2samenmeten.bat
+madavi_data/_csv2samenmeten.bat
+data/*
+madavi_data/*
 
 *.csv
 *.pdf

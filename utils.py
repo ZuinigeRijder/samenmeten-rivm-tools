@@ -17,6 +17,14 @@ from typing import Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+D = False
+
+
+def set_debug(debug):
+    """set debug"""
+    global D  # pylint:disable=global-statement
+    D = debug
+
 
 def dbg(line: str) -> bool:
     """print line if debugging"""
@@ -63,6 +71,8 @@ def to_int(string: str) -> int:
 def to_float(string: str) -> float:
     """convert to float"""
     if "None" in string:
+        return 0.0
+    if string == "":
         return 0.0
     return float(string.strip())
 
@@ -112,6 +122,21 @@ def split_on_comma(text: str) -> list[str]:
     """split string on comma and strip spaces around strings"""
     result = [x.strip() for x in text.split(",")]
     return result
+
+
+def to_local_datetime(dt_str: str):
+    """to_local_datetime"""
+    _ = D and dbg(f"to_local_datetime: {dt_str}")
+    utc = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+    _ = D and dbg(f"utc: {utc}")
+    dt = utc_to_local(utc)
+    return dt
+
+
+def to_local_time_str(dt: datetime):
+    """to_local_time_str"""
+    _ = D and dbg(f"to_local_time_str: {dt}")
+    return datetime.strftime(dt, "%Y-%m-%d %H:%M:%S")
 
 
 def iso8601_to_datetime(iso8601: str) -> datetime:

@@ -1,6 +1,6 @@
-# == csvdownload.py Author: Zuinige Rijder ==========================
+# == madavi_csvdownload.py Author: Zuinige Rijder ==========================
 """
-Simple Python3 script to download csv files from https://api-rrd.madavi.de
+Simple Python3 script to download madavi csv files from https://api-rrd.madavi.de
 """
 import sys
 from os import path

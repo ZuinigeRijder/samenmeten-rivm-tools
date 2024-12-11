@@ -1,6 +1,6 @@
-# == summary.py Author: Zuinige Rijder ==========================
+# == madavi_samenvatting.py Author: Zuinige Rijder ==========================
 """
-Simple Python3 script to read csv files and producing a summary
+Simple Python3 script to read madavi csv files and producing a summary
 """
 
 from dataclasses import dataclass
