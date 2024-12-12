@@ -164,9 +164,12 @@ MONTH_FROM = 1
 MONTH_UNTIL = 12
 HOUR_FROM = 0
 HOUR_UNTIL = 23
+WEEKDAY_FROM = 1
+WEEKDAY_UNTIL = 7
 year_filter_regex = re.compile(r"^j(\d+)-(\d+)$")
 month_filter_regex = re.compile(r"^m(\d+)-(\d+)$")
 hour_filter_regex = re.compile(r"^u(\d+)-(\d+)$")
+weekday_filter_regex = re.compile(r"^d(\d+)-(\d+)$")
 for kindex in range(1, len(sys.argv)):
     if sys.argv[kindex].lower() not in KEYWORD_LIST:
         arg = sys.argv[kindex]
@@ -175,21 +178,28 @@ for kindex in range(1, len(sys.argv)):
             YEAR_FROM = int(year_filter.group(1))
             YEAR_UNTIL = int(year_filter.group(2))
             print(
-                f"Jaar filter : {arg:12s} Van: {YEAR_FROM:5d} Tot en met: {YEAR_UNTIL:5d}"  # noqa
+                f"Jaar filter   : {arg:12s} Van: {YEAR_FROM:5d} Tot en met: {YEAR_UNTIL:5d}"  # noqa
             )
         elif month_filter_regex.search(arg.lower().strip()):
             month_filter = month_filter_regex.search(arg.lower().strip())
             MONTH_FROM = int(month_filter.group(1))
             MONTH_UNTIL = int(month_filter.group(2))
             print(
-                f"Maand filter: {arg:12s} Van: {MONTH_FROM:5d} Tot en met: {MONTH_UNTIL:5d}"  # noqa
+                f"Maand filter  : {arg:12s} Van: {MONTH_FROM:5d} Tot en met: {MONTH_UNTIL:5d}"  # noqa
             )
         elif hour_filter_regex.search(arg.lower().strip()):
             hour_filter = hour_filter_regex.search(arg.lower().strip())
             HOUR_FROM = int(hour_filter.group(1))
             HOUR_UNTIL = int(hour_filter.group(2))
             print(
-                f"Uur filter  : {arg:12s} Van: {HOUR_FROM:5d} Tot en met: {HOUR_UNTIL:5d}"  # noqa
+                f"Uur filter    : {arg:12s} Van: {HOUR_FROM:5d} Tot en met: {HOUR_UNTIL:5d}"  # noqa
+            )
+        elif weekday_filter_regex.search(arg.lower().strip()):
+            weekday_filter = weekday_filter_regex.search(arg.lower().strip())
+            WEEKDAY_FROM = int(weekday_filter.group(1))
+            HWEEKDAY_UNTIL = int(weekday_filter.group(2))
+            print(
+                f"Weekdag filter: {arg:12s} Van: {WEEKDAY_FROM:5d} Tot en met: {WEEKDAY_UNTIL:5d}"  # noqa
             )
         elif STATION_NAME_LIST != "":
             print("Onbekende parameter: " + arg)
@@ -212,7 +222,7 @@ Uitvoer  : STATION_LIST.txt.kml          (bestand in Google My Maps formaat)
            STATION_LIST.txt.pm25.avg.csv (gemiddelde PM2.5 per jaar per station)
            STATION_LIST.txt.pm10.avg.csv (gemiddelde PM10  per jaar per station)
 Voorbeeld: python samenvatting.py _GemeenteHeusden.txt
-Opties   : [uur] [dag] [week] [maand] [j2000-3000] [m1-12] [u0-23]
+Opties   : [uur] [dag] [week] [maand] [j2000-3000] [m1-12] [d1-7] [u0-23]
 
 Opm.1: Wilt u meer details zien, gebruik parameter uur/dag/week/maand
 Opm.2: Wilt u alleen bepaalde jaren mee te nemen,
@@ -224,9 +234,13 @@ Opm.3: Wilt u alleen bepaalde maanden mee te nemen,
 Opm.4: Wilt u alleen bepaalde uren mee te nemen,
        kunt u filteren met optie [u0-23]:
        bijvoorbeeld alleen de uren van 18:00 tot en met 02:00: u18-2
-Opm.5: station namen van een gemeente kan opgevraagd worden met tool:
+Opm.5: Wilt u alleen bepaalde dagen mee te nemen,
+       kunt u filteren met optie [d1-7]:
+       1=ma, 2=di, 3=wo, 4=do, 5=vr, 6=za, 7=zo.
+       Voorbeeld voor weekenden, inclusief vrijdag: d5-7
+Opm.6: station namen van een gemeente kan opgevraagd worden met tool:
             python gemeente_station_namen.py gemeente_code
-Opm.6: Voordat dit script gedraaid wordt, moeten de .csv bestanden voor
+Opm.7: Voordat dit script gedraaid wordt, moeten de .csv bestanden voor
        deze STATION_LIJST.txt gegenereerd zijn met:
             python station_data_naar_csv.py STATION_LIJST.txt
     """
@@ -528,6 +542,19 @@ def get_next_csv_line() -> str:
                             f"hour: {hour} skip: {skip} from: {HOUR_FROM} to: {HOUR_UNTIL}"  # noqa
                         )
 
+                if not skip and (WEEKDAY_FROM != 0 or WEEKDAY_UNTIL != 23):
+                    # filter on weekday
+                    current_date = datetime.strptime(line[0:10], "%Y-%m-%d")
+                    weekday = current_date.isoweekday()
+                    if WEEKDAY_FROM <= WEEKDAY_UNTIL:
+                        skip = weekday < WEEKDAY_FROM or weekday > WEEKDAY_UNTIL
+                    else:
+                        skip = not (weekday >= WEEKDAY_FROM or weekday <= WEEKDAY_UNTIL)
+                    if D:
+                        print(
+                            f"weekday: {weekday} date: {current_date} skip: {skip} from: {WEEKDAY_FROM} to: {WEEKDAY_UNTIL}"  # noqa
+                        )
+
                 if not skip:
                     fill_pm_kal(PM10, PM10_KAL)
                     fill_pm_kal(PM25, PM25_KAL)
@@ -621,9 +648,9 @@ def update_average_totals(key_str: str, values: Totals):
         totals.pm25_kal_min = min(totals.pm25_kal_min, values.pm25_kal_min)
         totals.pm25_kal_max = max(totals.pm25_kal_max, values.pm25_kal_max)
 
-        totals.who_pm10_daily = max(totals.who_pm10_daily, values.who_pm10_daily)
-        totals.eu_pm10_daily = max(totals.eu_pm10_daily, values.eu_pm10_daily)
-        totals.who_pm25_daily = max(totals.who_pm25_daily, values.who_pm25_daily)
+        totals.who_pm10_daily += values.who_pm10_daily
+        totals.eu_pm10_daily += values.eu_pm10_daily
+        totals.who_pm25_daily += values.who_pm25_daily
     else:
         AVERAGE_GRAND_TOTALS[key_str] = deepcopy_totals(key_str, values)
     if D:
