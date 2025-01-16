@@ -5,6 +5,7 @@ examples/x.*
 madavi_data/_csv2samenmeten.bat
 data/*
 madavi_data/*
+weg_madavi/*
 
 *.csv
 *.pdf

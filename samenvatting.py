@@ -197,7 +197,7 @@ for kindex in range(1, len(sys.argv)):
         elif weekday_filter_regex.search(arg.lower().strip()):
             weekday_filter = weekday_filter_regex.search(arg.lower().strip())
             WEEKDAY_FROM = int(weekday_filter.group(1))
-            HWEEKDAY_UNTIL = int(weekday_filter.group(2))
+            WEEKDAY_UNTIL = int(weekday_filter.group(2))
             print(
                 f"Weekdag filter: {arg:12s} Van: {WEEKDAY_FROM:5d} Tot en met: {WEEKDAY_UNTIL:5d}"  # noqa
             )
