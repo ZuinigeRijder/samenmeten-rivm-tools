@@ -160,6 +160,7 @@ STATION_NAME_LIST = ""
 # filters
 YEAR_FROM = 2000
 YEAR_UNTIL = 3000
+YEAR_FILTER = False
 MONTH_FROM = 1
 MONTH_UNTIL = 12
 HOUR_FROM = 0
@@ -177,6 +178,7 @@ for kindex in range(1, len(sys.argv)):
             year_filter = year_filter_regex.search(arg.lower().strip())
             YEAR_FROM = int(year_filter.group(1))
             YEAR_UNTIL = int(year_filter.group(2))
+            YEAR_FILTER = True
             print(
                 f"Jaar filter   : {arg:12s} Van: {YEAR_FROM:5d} Tot en met: {YEAR_UNTIL:5d}"  # noqa
             )
@@ -943,6 +945,26 @@ def summary() -> None:
         handle_line(last_split, True)
 
 
+def commas_after(years: list[str], year_index: int, current_year: str, pm_file) -> int:
+    """commas after"""
+    while year_index < len(years):
+        if years[year_index] > current_year:  # write empty years after current year
+            pm_file.write(",")
+        year_index += 1
+
+    return year_index
+
+
+def commas_before(years: list[str], year_index: int, year: str, pm_file):
+    """commas before"""
+    while year_index < len(years) and years[year_index] < year:
+        # write empty years before current year
+        pm_file.write(",")
+        year_index += 1
+
+    return year_index
+
+
 def write_pm_csv_file(
     pm_avg_file: TextIOWrapper,
     pm_file: TextIOWrapper,
@@ -952,6 +974,7 @@ def write_pm_csv_file(
     """write_pm_csv_file"""
     year_index = 0
     current_station = ""
+    current_year = "2000"
     pm_avg_kal_dict: dict[str] = {}
     pm_avg_elapsed_dict: dict[str] = {}
 
@@ -962,15 +985,15 @@ def write_pm_csv_file(
         if current_station != station:
             if current_station != "":
                 total_kal_avg = total_kal / total_elapsed
+                year_index = commas_after(years, year_index, current_year, pm_file)
                 pm_file.write(f",{total_kal_avg:.1f}")
                 total_kal = 0.0
                 total_elapsed = 0
             pm_file.write(f"\n{station}")
             current_station = station
             year_index = 0
-        while year_index < len(years) and years[year_index] != year:
-            pm_file.write(",")
-            year_index += 1
+        current_year = year
+        year_index = commas_before(years, year_index, year, pm_file)
         entry = pm_dict[pm_key]
         (kal, elapsed_hours) = entry.split(",")
         kal_float = float(kal)
@@ -993,6 +1016,7 @@ def write_pm_csv_file(
     # write average of last station
     if current_station != "":
         total_kal_avg = total_kal / total_elapsed
+        year_index = commas_after(years, year_index, year, pm_file)
         pm_file.write(f",{total_kal_avg:.1f}")
 
     # write average of grand totals
@@ -1000,9 +1024,7 @@ def write_pm_csv_file(
     total_kal = 0.0
     total_elapsed = 0
     for year in sorted(pm_avg_kal_dict.keys()):
-        while year_index < len(years) and years[year_index] != year:
-            pm_avg_file.write(",")
-            year_index += 1
+        year_index = commas_before(years, year_index, year, pm_avg_file)
         kal_float = pm_avg_kal_dict[year]
         elapsed_hours_int = pm_avg_elapsed_dict[year]
         total_kal += kal_float
@@ -1011,12 +1033,18 @@ def write_pm_csv_file(
         pm_avg_file.write(f",{kal_avg:.1f}")
         year_index += 1
     total_kal_avg = total_kal / total_elapsed
+    year_index = commas_after(years, year_index, year, pm_avg_file)
     pm_avg_file.write(f",{total_kal_avg:.1f}\n")
 
 
 def write_pm25_pm10_csv_files():
     """write_pm25_pm10_csv_files"""
     header = "Station"
+    if YEAR_FILTER:  # make sure all years are written to csv
+        for year in range(YEAR_FROM, YEAR_UNTIL + 1):
+            if year not in YEARS_DICT:
+                YEARS_DICT[f"{year}"] = True
+
     years = list(YEARS_DICT.keys())
     years.sort()
     for year in years:
