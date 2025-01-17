@@ -262,19 +262,19 @@ def init(current_day: datetime, split: list[str]) -> Totals:
     if pm25_kal < 0.0:
         pm25_kal = 5.0
     totals = Totals(
-        "unknown",
-        current_day,
-        1,
-        1,
-        pm10_kal,
-        pm10_kal,
-        pm10_kal,
-        pm25_kal,
-        pm25_kal,
-        pm25_kal,
-        0,
-        0,
-        0,
+        name="unknown",
+        current_day=current_day,
+        elapsed_hours_pm10=1,
+        elapsed_hours_pm25=1,
+        pm10_kal_avg=pm10_kal,
+        pm10_kal_min=pm10_kal,
+        pm10_kal_max=pm10_kal,
+        pm25_kal_avg=pm25_kal,
+        pm25_kal_min=pm25_kal,
+        pm25_kal_max=pm25_kal,
+        who_pm10_daily=0,
+        eu_pm10_daily=0,
+        who_pm25_daily=0,
     )
     return totals
 
@@ -638,6 +638,10 @@ def get_comment(
 
 def update_average_totals(key_str: str, values: Totals):
     """update_average_totals"""
+    if D and key_str == "Alle jaren":
+        print(
+            f"#Before update_average_totals: key_str: {key_str}\nValues : {values}\nAverage:{AVERAGE_GRAND_TOTALS[key_str]}"  # noqa
+        )
     if key_str in AVERAGE_GRAND_TOTALS:
         totals = AVERAGE_GRAND_TOTALS[key_str]
         totals.current_day = min(totals.current_day, values.current_day)
@@ -657,7 +661,7 @@ def update_average_totals(key_str: str, values: Totals):
         AVERAGE_GRAND_TOTALS[key_str] = deepcopy_totals(key_str, values)
     if D:
         print(
-            f"key_str: {key_str}\nValues : {values}\nAverage:{AVERAGE_GRAND_TOTALS[key_str]}"  # noqa
+            f"#After  update_average_totals: key_str: {key_str}\nValues : {values}\nAverage:{AVERAGE_GRAND_TOTALS[key_str]}"  # noqa
         )
 
 
@@ -787,7 +791,7 @@ def print_summaries(current_day_values: Totals, last: bool) -> None:
             _ = D and dbg(f"year {year}")
             update_average_totals(f"{year:>4}", GRAND_TOTALS.year)  # 4
             update_average_totals("alles", GRAND_TOTALS.year)  # 5
-            update_average_totals("Station", GRAND_TOTALS.year)  # 7
+            update_average_totals("Alle jaren", GRAND_TOTALS.year)  # 7
 
         if DAY:
             print_summary(
@@ -908,19 +912,20 @@ def summary() -> None:
     GRAND_TOTALS.week = None
     GRAND_TOTALS.month = None
     GRAND_TOTALS.year = None
-    AVERAGE_GRAND_TOTALS["Station"] = Totals(
-        "Alle jaren",
-        datetime.now(),
-        0,
-        0.0,  # avg
-        999.9,  # min
-        0.0,  # max
-        0.0,  # avg
-        999.9,  # min
-        0.0,  # max
-        0,
-        0,
-        0,
+    AVERAGE_GRAND_TOTALS["Alle jaren"] = Totals(
+        name="Alle jaren",
+        current_day=datetime.now(),
+        elapsed_hours_pm10=0,
+        elapsed_hours_pm25=0,
+        pm10_kal_avg=0.0,  # avg
+        pm10_kal_min=999.9,  # min
+        pm10_kal_max=0.0,  # max
+        pm25_kal_avg=0.0,  # avg
+        pm25_kal_min=999.9,  # min
+        pm25_kal_max=0.0,  # max
+        who_pm10_daily=0,
+        eu_pm10_daily=0,
+        who_pm25_daily=0,
     )
 
     while True:
@@ -1106,14 +1111,14 @@ def handle_station_list(station_name_list: str) -> None:
                 summary()  # do the work
 
                 if STATION_NAME_KML_PRINTED:  # only write kml if something written
-                    all_years = AVERAGE_GRAND_TOTALS["Station"]
+                    all_years = AVERAGE_GRAND_TOTALS["Alle jaren"]
                     number_of_days_pm10 = int(all_years.elapsed_hours_pm10 / 24)
                     number_of_days_pm25 = int(all_years.elapsed_hours_pm25 / 24)
                     print_summary(
                         f"ALLES {number_of_days_pm10:5d}d/{number_of_days_pm25:5d}d,, alles",  # noqa
                         all_years,
                     )
-                    del AVERAGE_GRAND_TOTALS["Station"]
+                    del AVERAGE_GRAND_TOTALS["Alle jaren"]
                     kml_writeln("</description>")
                     kml_write_name(all_years, name)
                     kml_writeln("</Placemark>")
