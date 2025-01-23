@@ -385,7 +385,10 @@ def kml_write_name(year: Totals, name: str, home: bool = False) -> None:
             style = "homeOkStyle"
     else:
         if who_exceeded:
-            style = "tooHighStyle"
+            if pm25_kal_avg >= (WHO_PM25_ANNUAL_AVG * 1.6):  # average >= 8 PM2.5
+                style = "cautionStyle"
+            else:
+                style = "tooHighStyle"
         else:
             style = "okStyle"
     kml_writeln(f"<styleUrl>#{style}</styleUrl>")
@@ -1144,10 +1147,12 @@ def handle_station_list(station_name_list: str) -> None:
         (KML.max_lon + KML.min_lon) / 2,
     )
     for key, totals in sorted_yearly.items():
-        elapsed_hours_pm10 = totals.elapsed_seconds_pm10
-        elapsed_hours_pm25 = totals.elapsed_seconds_pm25
-        pm10_kal_avg = totals.pm10_kal_avg / elapsed_hours_pm10
-        pm25_kal_avg = totals.pm25_kal_avg / elapsed_hours_pm25
+        elapsed_seconds_pm10 = totals.elapsed_seconds_pm10
+        elapsed_seconds_pm25 = totals.elapsed_seconds_pm25
+        if elapsed_seconds_pm10 <= 0 or elapsed_seconds_pm25 <= 0:
+            continue  # no valid data
+        pm10_kal_avg = totals.pm10_kal_avg / elapsed_seconds_pm10
+        pm25_kal_avg = totals.pm25_kal_avg / elapsed_seconds_pm25
         number_of_days_pm10 = int(totals.elapsed_seconds_pm10 / 86400)
         number_of_days_pm25 = int(totals.elapsed_seconds_pm25 / 86400)
         if len(key) == 4:
@@ -1172,8 +1177,6 @@ def handle_station_list(station_name_list: str) -> None:
         comment = get_comment(True, pm10_kal_avg, pm25_kal_avg, totals)
         output += comment
         print_output_formatted(output)
-        number_of_days_pm10 = int(totals.elapsed_seconds_pm10 / 86400)
-        number_of_days_pm25 = int(totals.elapsed_seconds_pm25 / 86400)
         if len(key) == 4:
             kml_writeln(
                 f'{totals.current_day.strftime("%Y"):4s}    {pm10_kal_avg:.1f}/{pm25_kal_avg:.1f} ({number_of_days_pm10}d/{number_of_days_pm25}d) #{totals.who_pm10_daily}/{totals.who_pm25_daily}'  # noqa
@@ -1201,6 +1204,8 @@ with Path(f"{STATION_NAME_LIST}.kml").open("w", encoding="utf-8") as KML.output_
     <href>https://maps.google.com/mapfiles/kml/shapes/schools.png</href></Icon></IconStyle></Style>
 <Style id="tooHighStyle"><IconStyle><Icon>
     <href>https://maps.google.com/mapfiles/kml/shapes/firedept.png</href></Icon></IconStyle></Style>
+<Style id="cautionStyle"><IconStyle><Icon>
+    <href>http://maps.google.com/mapfiles/kml/shapes/caution.png</href></Icon></IconStyle></Style>
 <Style id="okStyle"><IconStyle><Icon>
     <href>https://maps.google.com/mapfiles/kml/shapes/parks.png</href></Icon></IconStyle></Style>
     """
